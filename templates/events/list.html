@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Eventos{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-calendar-event-fill text-primary"></i> Eventos</h4>
+    {% if current_user.is_admin %}
+    <a href="{{ url_for('events.new_event') }}" class="btn btn-primary">
+        <i class="bi bi-plus"></i> Novo Evento
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filter -->
+<div class="card bg-dark border-secondary mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="d-flex gap-2 align-items-center">
+            <select name="type" class="form-select form-select-sm bg-dark border-secondary text-white" style="max-width:200px">
+                <option value="">Todos os tipos</option>
+                <option value="mining" {% if selected_type == 'mining' %}selected{% endif %}>Mineração</option>
+                <option value="pvp" {% if selected_type == 'pvp' %}selected{% endif %}>PVP</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline-primary">Filtrar</button>
+            <a href="{{ url_for('events.list_events') }}" class="btn btn-sm btn-outline-secondary">Limpar</a>
+        </form>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Descrição</th>
+                        <th>Multa/ausente</th>
+                        <th>Presença</th>
+                        <th>Multas</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for event in events %}
+                <tr>
+                    <td>{{ event.event_date.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% if event.event_type == 'mining' %}
+                        <span class="badge bg-info"><i class="bi bi-gem"></i> Mineração</span>
+                        {% else %}
+                        <span class="badge bg-danger"><i class="bi bi-crosshair2"></i> PVP</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ event.description or '—' }}</td>
+                    <td class="text-warning">{{ "%.0f"|format(event.fine_amount) }}m</td>
+                    <td>
+                        <span class="text-success">{{ event.attendance_count }} presentes</span>
+                        <span class="text-secondary">/</span>
+                        <span class="text-danger">{{ event.absent_count }} ausentes</span>
+                    </td>
+                    <td>
+                        {% if event.fines_applied %}
+                        <span class="badge bg-success"><i class="bi bi-check"></i> Aplicadas</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Pendente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('events.detail', event_id=event.id) }}"
+                           class="btn btn-sm btn-outline-primary me-1">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        {% if current_user.is_admin and not event.fines_applied %}
+                        <a href="{{ url_for('events.attendance', event_id=event.id) }}"
+                           class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-person-check"></i>
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-secondary py-4">Nenhum evento registrado.</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

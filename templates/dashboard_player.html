@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Minhas Contas{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">
+        <i class="bi bi-person-lines-fill text-warning"></i>
+        Olá, <strong>{{ current_user.name }}</strong>
+        <span class="badge bg-secondary ms-2">{{ current_user.category }}</span>
+    </h4>
+</div>
+
+<!-- Total across all accounts -->
+<div class="card bg-dark border-{% if total_debt > 0 %}danger{% else %}success{% endif %} mb-4">
+    <div class="card-body d-flex align-items-center gap-4">
+        <div class="p-3 rounded bg-{% if total_debt > 0 %}danger{% else %}success{% endif %} bg-opacity-25">
+            <i class="bi bi-cash-stack fs-2 text-{% if total_debt > 0 %}danger{% else %}success{% endif %}"></i>
+        </div>
+        <div>
+            <div class="fs-4 fw-bold text-{% if total_debt > 0 %}danger{% else %}success{% endif %}">
+                {% if total_debt > 0 %}
+                    {{ "%.0f"|format(total_debt) }}m ISK em dívida (todas as contas)
+                {% else %}
+                    Todas as contas em dia!
+                {% endif %}
+            </div>
+            <div class="text-secondary small">
+                Você gerencia {{ accounts_info|length }} conta(s) no total
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accounts grid -->
+<div class="row g-3">
+    {% for info in accounts_info %}
+    {% set player = info.player %}
+    {% set debt = info.debt %}
+    <div class="col-md-6 col-xl-4">
+        <div class="card bg-dark border-{% if player.id == current_user.id %}warning{% elif debt > 0 %}danger{% else %}secondary{% endif %} h-100">
+            <div class="card-header border-secondary d-flex align-items-center gap-2">
+                {% if player.id == current_user.id %}
+                <i class="bi bi-person-fill text-warning"></i>
+                <strong class="text-warning">{{ player.name }}</strong>
+                <span class="badge bg-warning text-dark ms-1 small">Principal</span>
+                {% else %}
+                <i class="bi bi-person text-secondary"></i>
+                <strong class="text-white">{{ player.name }}</strong>
+                {% endif %}
+                <span class="badge bg-secondary ms-auto">{{ player.category }}</span>
+            </div>
+            <div class="card-body">
+                <dl class="row small mb-2">
+                    <dt class="col-5 text-secondary">Ocupação</dt>
+                    <dd class="col-7">{{ player.occupation or '—' }}</dd>
+                    <dt class="col-5 text-secondary">Entrada</dt>
+                    <dd class="col-7">{{ player.join_date.strftime('%d/%m/%Y') }}</dd>
+                    <dt class="col-5 text-secondary">Nave</dt>
+                    <dd class="col-7">
+                        {% if player.has_doctrine_ship %}
+                        <span class="text-success">{{ player.doctrine_ship_1 }}</span>
+                        {% else %}
+                        <span class="text-danger">Sem nave doutrina</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+
+                {% if debt > 0 %}
+                <div class="alert alert-danger py-1 px-2 small mb-2">
+                    <i class="bi bi-exclamation-circle"></i>
+                    <strong>{{ "%.0f"|format(debt) }}m</strong> em aberto
+                </div>
+                {% else %}
+                <div class="alert alert-success py-1 px-2 small mb-2">
+                    <i class="bi bi-check-circle"></i> Em dia
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer border-secondary">
+                <a href="{{ url_for('players.detail', player_id=player.id) }}"
+                   class="btn btn-sm btn-outline-primary w-100">
+                    <i class="bi bi-eye"></i> Ver Detalhes
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

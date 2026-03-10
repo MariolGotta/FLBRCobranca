@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Presença — {{ event.type_label }} {{ event.event_date.strftime('%d/%m/%Y') }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">
+        {% if event.event_type == 'mining' %}
+        <i class="bi bi-gem text-info"></i>
+        {% else %}
+        <i class="bi bi-crosshair2 text-danger"></i>
+        {% endif %}
+        Presença — {{ event.type_label }} {{ event.event_date.strftime('%d/%m/%Y') }}
+    </h4>
+</div>
+
+<div class="alert alert-info small">
+    <i class="bi bi-info-circle"></i>
+    Marque os jogadores que <strong>estiveram presentes</strong>. Quem não for marcado receberá multa de
+    <strong class="text-warning">{{ "%.0f"|format(event.fine_amount) }}m</strong>.
+    Jogadores Novatos são isentos.
+</div>
+
+<form method="POST">
+    <div class="card bg-dark border-secondary mb-3">
+        <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Jogadores ({{ attendances|length }})</h6>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-success" id="selectAll">
+                    <i class="bi bi-check-all"></i> Todos presentes
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="selectNone">
+                    <i class="bi bi-x-square"></i> Todos ausentes
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-2">
+                {% for att in attendances %}
+                <div class="col-md-4 col-lg-3">
+                    <div class="form-check p-2 border border-secondary rounded attendance-item"
+                         data-player-id="{{ att.player_id }}">
+                        <input class="form-check-input attendance-cb" type="checkbox"
+                               name="attended" value="{{ att.player_id }}"
+                               id="p{{ att.player_id }}"
+                               {% if att.attended %}checked{% endif %}>
+                        <label class="form-check-label text-white w-100" for="p{{ att.player_id }}"
+                               style="cursor:pointer">
+                            {{ att.player.name }}
+                            <span class="badge bg-secondary ms-1 small">{{ att.player.category }}</span>
+                        </label>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12 text-center text-secondary">
+                    Nenhum jogador elegível para este evento.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" name="save_only" class="btn btn-outline-primary">
+            <i class="bi bi-save"></i> Salvar Presenças
+        </button>
+        {% if not event.fines_applied %}
+        <button type="submit" name="apply_fines" value="1" class="btn btn-danger"
+                onclick="return confirm('Salvar presenças E aplicar multas para os ausentes?')">
+            <i class="bi bi-cash"></i> Salvar e Aplicar Multas
+        </button>
+        {% endif %}
+        <a href="{{ url_for('events.detail', event_id=event.id) }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('selectAll').addEventListener('click', function() {
+    document.querySelectorAll('.attendance-cb').forEach(cb => cb.checked = true);
+    updateStyles();
+});
+document.getElementById('selectNone').addEventListener('click', function() {
+    document.querySelectorAll('.attendance-cb').forEach(cb => cb.checked = false);
+    updateStyles();
+});
+document.querySelectorAll('.attendance-cb').forEach(cb => {
+    cb.addEventListener('change', updateStyles);
+});
+function updateStyles() {
+    document.querySelectorAll('.attendance-item').forEach(item => {
+        const cb = item.querySelector('.attendance-cb');
+        item.classList.toggle('border-success', cb.checked);
+        item.classList.toggle('border-secondary', !cb.checked);
+    });
+}
+updateStyles();
+</script>
+{% endblock %}

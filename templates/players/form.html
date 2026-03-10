@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}{% if player %}Editar {{ player.name }}{% else %}Novo Jogador{% endif %}{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card bg-dark border-secondary">
+            <div class="card-header border-secondary">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-plus text-success"></i>
+                    {% if player %}Editar Jogador: {{ player.name }}{% else %}Adicionar Jogador{% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-secondary">Nome do Personagem *</label>
+                            <input type="text" name="name" class="form-control bg-dark border-secondary text-white"
+                                   value="{{ player.name if player else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-secondary">Dono da Conta</label>
+                            <input type="text" name="account_owner" class="form-control bg-dark border-secondary text-white"
+                                   value="{{ player.account_owner if player else '' }}"
+                                   placeholder="Nome real do dono">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary">Categoria *</label>
+                            <select name="category" class="form-select bg-dark border-secondary text-white" required>
+                                {% for cat in categories %}
+                                <option value="{{ cat }}" {% if player and player.category == cat %}selected{% endif %}>
+                                    {{ cat }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary">Ocupação</label>
+                            <select name="occupation" class="form-select bg-dark border-secondary text-white">
+                                <option value="">— Selecione —</option>
+                                {% for occ in occupations %}
+                                <option value="{{ occ }}" {% if player and player.occupation == occ %}selected{% endif %}>
+                                    {{ occ }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary">Data de Entrada</label>
+                            <input type="date" name="join_date" class="form-control bg-dark border-secondary text-white"
+                                   value="{{ player.join_date.strftime('%Y-%m-%d') if player else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-secondary">Personagem Principal (se Clone)</label>
+                            <select name="parent_player_id" class="form-select bg-dark border-secondary text-white">
+                                <option value="">— Nenhum —</option>
+                                {% for mp in main_players %}
+                                <option value="{{ mp.id }}"
+                                    {% if player and player.parent_player_id == mp.id %}selected{% endif %}>
+                                    {{ mp.name }} ({{ mp.category }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="has_outpost"
+                                       id="has_outpost"
+                                       {% if player and player.has_outpost %}checked{% endif %}>
+                                <label class="form-check-label text-secondary" for="has_outpost">
+                                    Possui Outpost (250m/mês)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-secondary">Naves de Doutrina</label>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <input type="text" name="doctrine_ship_1"
+                                           class="form-control bg-dark border-secondary text-white"
+                                           placeholder="Nave 1"
+                                           value="{{ player.doctrine_ship_1 if player else '' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" name="doctrine_ship_2"
+                                           class="form-control bg-dark border-secondary text-white"
+                                           placeholder="Nave 2"
+                                           value="{{ player.doctrine_ship_2 if player else '' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" name="doctrine_ship_3"
+                                           class="form-control bg-dark border-secondary text-white"
+                                           placeholder="Nave 3"
+                                           value="{{ player.doctrine_ship_3 if player else '' }}">
+                                </div>
+                            </div>
+                            <div class="form-text text-secondary">
+                                Jogadores sem nave de doutrina (exceto Novatos) pagam multa de 50m/mês.
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-secondary">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-lg"></i>
+                            {% if player %}Salvar Alterações{% else %}Adicionar Jogador{% endif %}
+                        </button>
+                        <a href="{{ url_for('players.list_players') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Configurações de Preços{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card bg-dark border-secondary">
+            <div class="card-header border-secondary">
+                <h5 class="mb-0"><i class="bi bi-sliders text-warning"></i> Configurações de Preços</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning small mb-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Importante:</strong> Alterar os valores aqui afeta apenas cobranças <em>futuras</em>.
+                    Dívidas já criadas mantêm o valor original.
+                </div>
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label text-secondary">
+                                <i class="bi bi-shield-check text-primary"></i> SRP (por mês, por jogador)
+                            </label>
+                            <div class="input-group">
+                                <input type="number" name="srp_price" class="form-control bg-dark border-secondary text-white"
+                                       value="{{ settings.srp_price }}" min="0" step="0.01" required>
+                                <span class="input-group-text bg-dark border-secondary text-secondary">m ISK</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-secondary">
+                                <i class="bi bi-building text-info"></i> Outpost (por mês, por slot) — vence dia 23
+                            </label>
+                            <div class="input-group">
+                                <input type="number" name="outpost_price" class="form-control bg-dark border-secondary text-white"
+                                       value="{{ settings.outpost_price }}" min="0" step="0.01" required>
+                                <span class="input-group-text bg-dark border-secondary text-secondary">m ISK</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-secondary">
+                                <i class="bi bi-gem text-warning"></i> Multa por ausência em Mineração (semanal)
+                            </label>
+                            <div class="input-group">
+                                <input type="number" name="mining_fine" class="form-control bg-dark border-secondary text-white"
+                                       value="{{ settings.mining_fine }}" min="0" step="0.01" required>
+                                <span class="input-group-text bg-dark border-secondary text-secondary">m ISK</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-secondary">
+                                <i class="bi bi-crosshair2 text-danger"></i> Multa por ausência em PVP (por evento)
+                            </label>
+                            <div class="input-group">
+                                <input type="number" name="pvp_fine" class="form-control bg-dark border-secondary text-white"
+                                       value="{{ settings.pvp_fine }}" min="0" step="0.01" required>
+                                <span class="input-group-text bg-dark border-secondary text-secondary">m ISK</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-secondary">
+                                <i class="bi bi-rocket text-secondary"></i> Multa mensal por falta de Nave Doutrina
+                            </label>
+                            <div class="input-group">
+                                <input type="number" name="doctrine_fine" class="form-control bg-dark border-secondary text-white"
+                                       value="{{ settings.doctrine_fine }}" min="0" step="0.01" required>
+                                <span class="input-group-text bg-dark border-secondary text-secondary">m ISK</span>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="border-secondary">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-save"></i> Salvar Configurações
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

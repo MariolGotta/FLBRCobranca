@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Evento {{ event.type_label }} {{ event.event_date.strftime('%d/%m/%Y') }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0">
+        {% if event.event_type == 'mining' %}
+        <i class="bi bi-gem text-info"></i>
+        {% else %}
+        <i class="bi bi-crosshair2 text-danger"></i>
+        {% endif %}
+        Evento {{ event.type_label }} — {{ event.event_date.strftime('%d/%m/%Y') }}
+    </h4>
+    <div class="d-flex gap-2">
+        {% if is_admin %}
+        <a href="{{ url_for('events.attendance', event_id=event.id) }}" class="btn btn-sm btn-outline-warning">
+            <i class="bi bi-person-check"></i> Editar Presença
+        </a>
+        {% if not event.fines_applied %}
+        <form method="POST" action="{{ url_for('events.apply_fines', event_id=event.id) }}"
+              onsubmit="return confirm('Aplicar multas para os ausentes?')">
+            <button class="btn btn-sm btn-danger">
+                <i class="bi bi-cash"></i> Aplicar Multas
+            </button>
+        </form>
+        {% endif %}
+        {% endif %}
+        <a href="{{ url_for('events.list_events') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <div class="card bg-dark border-secondary text-center p-3">
+            <div class="fs-3 fw-bold text-white">{{ event.attendance_count }}</div>
+            <div class="text-success small">Presentes</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-dark border-secondary text-center p-3">
+            <div class="fs-3 fw-bold text-white">{{ event.absent_count }}</div>
+            <div class="text-danger small">Ausentes</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-dark border-secondary text-center p-3">
+            <div class="fs-3 fw-bold text-warning">{{ "%.0f"|format(event.fine_amount) }}m</div>
+            <div class="text-secondary small">Multa por ausência</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-dark border-secondary text-center p-3">
+            {% if event.fines_applied %}
+            <div class="fs-4 fw-bold text-success"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="text-success small">Multas Aplicadas</div>
+            {% else %}
+            <div class="fs-4 fw-bold text-warning"><i class="bi bi-clock-fill"></i></div>
+            <div class="text-warning small">Multas Pendentes</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if event.description %}
+<p class="text-secondary"><i class="bi bi-chat-text"></i> {{ event.description }}</p>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card bg-dark border-success">
+            <div class="card-header border-success">
+                <h6 class="mb-0 text-success"><i class="bi bi-check-circle-fill"></i> Presentes ({{ event.attendance_count }})</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for att in attendances if att.attended %}
+                <li class="list-group-item bg-dark border-secondary text-white py-1 px-3">
+                    <a href="{{ url_for('players.detail', player_id=att.player.id) }}"
+                       class="text-white text-decoration-none">
+                        {{ att.player.name }}
+                    </a>
+                    <span class="badge bg-secondary ms-1 small">{{ att.player.category }}</span>
+                </li>
+                {% else %}
+                <li class="list-group-item bg-dark border-secondary text-secondary">Nenhum presente</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-dark border-danger">
+            <div class="card-header border-danger">
+                <h6 class="mb-0 text-danger"><i class="bi bi-x-circle-fill"></i> Ausentes ({{ event.absent_count }})</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for att in attendances if not att.attended %}
+                <li class="list-group-item bg-dark border-secondary text-white py-1 px-3 d-flex justify-content-between">
+                    <a href="{{ url_for('players.detail', player_id=att.player.id) }}"
+                       class="text-white text-decoration-none">
+                        {{ att.player.name }}
+                    </a>
+                    {% if event.fines_applied %}
+                    <span class="text-warning small">{{ "%.0f"|format(event.fine_amount) }}m</span>
+                    {% endif %}
+                </li>
+                {% else %}
+                <li class="list-group-item bg-dark border-secondary text-secondary">Nenhum ausente!</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

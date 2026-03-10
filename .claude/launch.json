@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "FLBR Corp",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["app.py"],
+      "port": 30000
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Novo Evento{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card bg-dark border-secondary">
+            <div class="card-header border-secondary">
+                <h5 class="mb-0"><i class="bi bi-calendar-plus text-primary"></i> Novo Evento</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary">Tipo de Evento</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="event_type"
+                                       value="mining" id="typeMining" required>
+                                <label class="form-check-label text-info" for="typeMining">
+                                    <i class="bi bi-gem"></i> Mineração
+                                    <span class="text-secondary small">(multa: {{ "%.0f"|format(mining_fine) }}m)</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="event_type"
+                                       value="pvp" id="typePvp">
+                                <label class="form-check-label text-danger" for="typePvp">
+                                    <i class="bi bi-crosshair2"></i> PVP
+                                    <span class="text-secondary small">(multa: {{ "%.0f"|format(pvp_fine) }}m)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary">Data do Evento</label>
+                        <input type="date" name="event_date" class="form-control bg-dark border-secondary text-white"
+                               required value="{{ today }}">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-secondary">Descrição (opcional)</label>
+                        <input type="text" name="description" class="form-control bg-dark border-secondary text-white"
+                               placeholder="Ex: Fleet de mineração no sistema X">
+                    </div>
+                    <div class="alert alert-info small">
+                        <i class="bi bi-info-circle"></i>
+                        Os valores de multa são travados no momento de criação. Após criar o evento, marque a presença dos jogadores.
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Criar Evento
+                        </button>
+                        <a href="{{ url_for('events.list_events') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.querySelector('input[name="event_date"]');
+    if (!dateInput.value) dateInput.value = today;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+env/
+
+# Planilhas Excel (dados sensíveis - não subir para o GitHub)
+*.xlsx
+*.xls
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# O banco de dados LOCAL é incluído no .gitignore apenas se você não quiser
+# subir os dados. Descomente a linha abaixo para excluir o DB do git:
+# database/flbr.db
+
+# Scripts de manutenção one-time (opcional manter)
+# fix_join_dates.py

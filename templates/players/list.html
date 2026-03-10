@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}Jogadores{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-people-fill text-primary"></i> Jogadores</h4>
+    {% if current_user.is_admin %}
+    <a href="{{ url_for('players.new_player') }}" class="btn btn-success">
+        <i class="bi bi-person-plus"></i> Adicionar Jogador
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="card bg-dark border-secondary mb-3">
+    <div class="card-body py-2">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <input type="text" name="q" value="{{ search }}" placeholder="Buscar por nome..."
+                       class="form-control form-control-sm bg-dark border-secondary text-white">
+            </div>
+            <div class="col-md-3">
+                <select name="category" class="form-select form-select-sm bg-dark border-secondary text-white">
+                    <option value="">Todas as categorias</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="inactive" value="1"
+                           id="showInactive" {% if show_inactive %}checked{% endif %}>
+                    <label class="form-check-label text-secondary" for="showInactive">Mostrar inativos</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                    <i class="bi bi-search"></i> Filtrar
+                </button>
+            </div>
+            <div class="col-md-1">
+                <a href="{{ url_for('players.list_players') }}" class="btn btn-sm btn-outline-secondary w-100">
+                    <i class="bi bi-x"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Categoria</th>
+                        <th>Ocupação</th>
+                        <th>Dono</th>
+                        <th>Naves Doutrina</th>
+                        <th>Outpost</th>
+                        <th class="text-warning">Dívida</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for player in players %}
+                <tr class="{% if not player.active %}opacity-50{% endif %}">
+                    <td>
+                        <a href="{{ url_for('players.detail', player_id=player.id) }}" class="text-white fw-bold text-decoration-none">
+                            {{ player.name }}
+                        </a>
+                        {% if player.novato_over_limit %}
+                        <span class="badge bg-warning text-dark ms-1" title="Novato há mais de 3 meses">⚠ 3m+</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if player.category == 'Novato' %}
+                        <span class="badge bg-secondary">{{ player.category }}</span>
+                        {% elif player.category in ['Ministro', 'CEO', 'Administrador', 'Contador'] %}
+                        <span class="badge bg-danger">{{ player.category }}</span>
+                        {% elif player.category == 'Elite' %}
+                        <span class="badge bg-warning text-dark">{{ player.category }}</span>
+                        {% else %}
+                        <span class="badge bg-primary">{{ player.category }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-secondary small">{{ player.occupation or '—' }}</td>
+                    <td class="text-secondary small">{{ player.account_owner or '—' }}</td>
+                    <td>
+                        {% if player.has_doctrine_ship %}
+                        <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
+                        {% else %}
+                        <span class="text-danger"><i class="bi bi-x-circle-fill"></i></span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if player.has_outpost %}
+                        <span class="text-info"><i class="bi bi-check-circle-fill"></i></span>
+                        {% else %}
+                        <span class="text-secondary">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set debt = player_debts.get(player.id, 0) %}
+                        {% if debt > 0 %}
+                        <span class="text-warning fw-bold">{{ "%.0f"|format(debt) }}m</span>
+                        {% else %}
+                        <span class="text-success">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not player.active %}
+                        <span class="badge bg-dark border border-secondary text-secondary">Inativo</span>
+                        {% else %}
+                        <span class="badge bg-success">Ativo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('players.detail', player_id=player.id) }}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-secondary py-4">Nenhum jogador encontrado.</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer border-secondary text-secondary small">
+        {{ players|length }} jogador(es) encontrado(s)
+    </div>
+</div>
+{% endblock %}

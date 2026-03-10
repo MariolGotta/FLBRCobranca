@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -lh *.xlsx)",
+      "Bash(python3:*)",
+      "Bash(pip install -r requirements.txt -q)",
+      "Bash(python -c \"from app import create_app; app = create_app\\(\\); print\\(''OK - Flask app created successfully''\\)\")",
+      "Bash(python import_excel.py)",
+      "Bash(python -c \":*)",
+      "Bash(python fix_join_dates.py)",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}
