@@ -12,7 +12,7 @@ set -e
 
 APP_DIR="/opt/cobrança"
 APP_USER="flbr"
-REPO_URL="https://github.com/SEU_USUARIO/FLBRCobranca.git"   # <-- ALTERE AQUI
+REPO_URL="https://github.com/MariolGotta/FLBRCobranca.git"
 PORT=30000
 SERVICE_NAME="flbrcobranca"
 
