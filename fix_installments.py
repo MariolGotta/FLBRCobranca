@@ -153,13 +153,21 @@ def import_outpost():
         if i >= 4 and isinstance(v, datetime):
             date_cols[i] = v.strftime('%Y-%m')
 
+    # Mapeamento de nomes da planilha -> nome correto no banco
+    NAME_MAP = {
+        'LTG Ender'     : 'LTG EndeRR',
+        'Pulegarzinho'  : 'Pulegarzinh0',
+        'Slize Ezlis'   : 'Slize Ezils',
+        'Cmdt Monstrao' : 'Capt Monstrão',
+    }
+
     outpost_price = Setting.get('outpost_price')
     now           = datetime.utcnow()
 
     players_marked = set()   # evita marcar has_outpost duas vezes
     created = skipped = not_found = 0
 
-    print("\n=== 2. Importação de Outpost ===\n")
+    print("\n=== 2. Importacao de Outpost ===\n")
     print(f"  Meses encontrados: {len(date_cols)} ({min(date_cols.values())} ate {max(date_cols.values())})\n")
 
     for row in rows[4:]:
@@ -168,13 +176,16 @@ def import_outpost():
             continue
         name = str(name).strip()
 
-        player = Player.query.filter_by(name=name).first()
+        # Aplica mapeamento de nomes antes de buscar
+        db_name = NAME_MAP.get(name, name)
+
+        player = Player.query.filter_by(name=db_name).first()
         if not player:
-            # Tenta match case-insensitive
+            # Tenta match case-insensitive como fallback
             from models import Player as P
-            player = P.query.filter(P.name.ilike(name)).first()
+            player = P.query.filter(P.name.ilike(db_name)).first()
         if not player:
-            print(f"  AVISO: '{name}' não encontrado no banco.")
+            print(f"  AVISO: '{name}' (banco: '{db_name}') nao encontrado.")
             not_found += 1
             continue
 
