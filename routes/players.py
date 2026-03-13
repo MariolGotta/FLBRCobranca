@@ -69,10 +69,25 @@ def detail(player_id):
         Debt.created_at.desc() # desempate pela data de criação
     ).all()
 
+    FINE_TYPES = {'mining_fine', 'pvp_fine', 'doctrine_fine'}
+
     unpaid_debts = [d for d in debts if not d.paid]
-    paid_debts = [d for d in debts if d.paid]
+    paid_debts   = [d for d in debts if d.paid]
 
     total_unpaid = sum(d.amount for d in unpaid_debts)
+
+    # Contagens para os filtros do histórico
+    def _is_manual(d):
+        desc = d.description or ''
+        return '(importado)' not in desc and '(parcelamento)' not in desc
+
+    paid_counts = {
+        'all':     len(paid_debts),
+        'srp':     sum(1 for d in paid_debts if d.debt_type == 'srp'),
+        'outpost': sum(1 for d in paid_debts if d.debt_type == 'outpost'),
+        'multa':   sum(1 for d in paid_debts if d.debt_type in FINE_TYPES),
+        'manual':  sum(1 for d in paid_debts if _is_manual(d)),
+    }
 
     # Accounts managed by this player (via account_owner field OR parent_player_id)
     managed_accounts = player.get_managed_accounts()
@@ -95,7 +110,8 @@ def detail(player_id):
                            owner_player=owner_player,
                            is_admin=current_user.is_admin,
                            is_own_profile=is_own_profile,
-                           viewer_has_managed=viewer_has_managed)
+                           viewer_has_managed=viewer_has_managed,
+                           paid_counts=paid_counts)
 
 
 @players_bp.route('/new', methods=['GET', 'POST'])

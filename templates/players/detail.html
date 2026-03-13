@@ -216,14 +216,35 @@
 
 <!-- Paid debts -->
 {% if paid_debts %}
-<details class="mb-3">
+<details class="mb-3" id="paidDebtsSection" open>
     <summary class="text-secondary mb-2" style="cursor:pointer">
-        <i class="bi bi-check-circle text-success"></i> Histórico de pagamentos ({{ paid_debts|length }})
+        <i class="bi bi-check-circle text-success"></i>
+        Histórico de pagamentos (<span id="visibleCount">{{ paid_debts|length }}</span> / {{ paid_debts|length }})
     </summary>
+
+    <!-- Filtros -->
+    <div class="d-flex flex-wrap gap-2 mb-2 mt-1">
+        <button class="btn btn-sm btn-success active" onclick="filterHistory('all')" id="f-all">
+            Todos <span class="badge bg-white text-success ms-1">{{ paid_counts.all }}</span>
+        </button>
+        <button class="btn btn-sm btn-outline-primary" onclick="filterHistory('srp')" id="f-srp">
+            SRP <span class="badge bg-primary ms-1">{{ paid_counts.srp }}</span>
+        </button>
+        <button class="btn btn-sm btn-outline-warning" onclick="filterHistory('outpost')" id="f-outpost">
+            Outpost <span class="badge bg-warning text-dark ms-1">{{ paid_counts.outpost }}</span>
+        </button>
+        <button class="btn btn-sm btn-outline-danger" onclick="filterHistory('multa')" id="f-multa">
+            Multas <span class="badge bg-danger ms-1">{{ paid_counts.multa }}</span>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="filterHistory('manual')" id="f-manual">
+            Adicionado manualmente <span class="badge bg-secondary ms-1">{{ paid_counts.manual }}</span>
+        </button>
+    </div>
+
     <div class="card bg-dark border-success">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-dark table-hover mb-0 small">
+                <table class="table table-dark table-hover mb-0 small" id="historyTable">
                     <thead class="table-secondary">
                         <tr>
                             <th>Tipo</th>
@@ -235,7 +256,9 @@
                     </thead>
                     <tbody>
                     {% for debt in paid_debts %}
-                    <tr>
+                    {% set is_manual = '(importado)' not in (debt.description or '') and '(parcelamento)' not in (debt.description or '') %}
+                    <tr data-type="{{ debt.debt_type }}"
+                        data-manual="{{ 'true' if is_manual else 'false' }}">
                         <td><span class="badge bg-success">{{ debt.label }}</span></td>
                         <td>{{ debt.description or '—' }}</td>
                         <td class="text-secondary">{{ debt.month or '—' }}</td>
@@ -246,9 +269,53 @@
                     </tbody>
                 </table>
             </div>
+            <div id="emptyMsg" class="p-3 text-secondary small text-center" style="display:none">
+                Nenhum registro para este filtro.
+            </div>
         </div>
     </div>
 </details>
+
+<script>
+const FINE_TYPES = ['mining_fine', 'pvp_fine', 'doctrine_fine'];
+
+function filterHistory(filter) {
+    // Atualiza botões ativos
+    ['all','srp','outpost','multa','manual'].forEach(f => {
+        const btn = document.getElementById('f-' + f);
+        btn.classList.toggle('active', f === filter);
+        // Swap between filled and outline style
+        const isFilled = f === filter;
+        const colors = {all:'success', srp:'primary', outpost:'warning', multa:'danger', manual:'secondary'};
+        btn.className = btn.className
+            .replace(/btn-(outline-\w+|success|primary|warning|danger|secondary)\b/g, '')
+            .trim();
+        btn.classList.add(isFilled ? `btn-${colors[f]}` : `btn-outline-${colors[f]}`);
+        if (f === filter) btn.classList.add('active');
+    });
+
+    const rows = document.querySelectorAll('#historyTable tbody tr');
+    let visible = 0;
+
+    rows.forEach(row => {
+        const type   = row.dataset.type;
+        const manual = row.dataset.manual === 'true';
+        let show = false;
+
+        if (filter === 'all')     show = true;
+        else if (filter === 'srp')     show = type === 'srp';
+        else if (filter === 'outpost') show = type === 'outpost';
+        else if (filter === 'multa')   show = FINE_TYPES.includes(type);
+        else if (filter === 'manual')  show = manual;
+
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    document.getElementById('visibleCount').textContent = visible;
+    document.getElementById('emptyMsg').style.display = visible === 0 ? '' : 'none';
+}
+</script>
 {% endif %}
 
 {% if not unpaid_debts and not paid_debts %}
