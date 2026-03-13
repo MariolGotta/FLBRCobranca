@@ -32,9 +32,8 @@ Thumbs.db
 # Logs
 *.log
 
-# O banco de dados LOCAL é incluído no .gitignore apenas se você não quiser
-# subir os dados. Descomente a linha abaixo para excluir o DB do git:
-# database/flbr.db
+# Banco de dados — nunca sobrescrever o DB da VPS com dados locais
+database/flbr.db
 
 # Scripts de manutenção one-time (opcional manter)
 # fix_join_dates.py

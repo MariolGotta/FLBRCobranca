@@ -92,7 +92,7 @@ def generate_monthly():
 @payments_bp.route('/add-manual', methods=['GET', 'POST'])
 @login_required
 def add_manual():
-    """Manually add a custom debt to a player."""
+    """Manually add a custom debt to a player (supports multiple periods)."""
     require_admin()
 
     players = Player.query.filter_by(active=True).order_by(Player.name).all()
@@ -102,31 +102,58 @@ def add_manual():
         ('mining_fine', 'Multa Mineração'),
         ('pvp_fine', 'Multa PVP'),
         ('doctrine_fine', 'Multa Nave Doutrina'),
+        ('custom', 'Outro'),
     ]
 
     if request.method == 'POST':
+        from datetime import datetime
         player_id = int(request.form.get('player_id'))
         debt_type = request.form.get('debt_type')
         amount = float(request.form.get('amount', 0))
         description = request.form.get('description', '').strip()
         month = request.form.get('month', '').strip() or None
         paid = request.form.get('paid') == 'on'
+        quantity = max(1, int(request.form.get('quantity', 1)))
 
-        debt = Debt(
-            player_id=player_id,
-            debt_type=debt_type,
-            amount=amount,
-            description=description,
-            month=month,
-            paid=paid,
-        )
-        if paid:
-            from datetime import datetime
-            debt.paid_at = datetime.utcnow()
+        created = 0
+        for i in range(quantity):
+            # Calculate the month for each period (e.g. Jan, Feb, Mar...)
+            if month and quantity > 1:
+                year, base_month = map(int, month.split('-'))
+                total_months = base_month + i
+                y = year + (total_months - 1) // 12
+                new_m = ((total_months - 1) % 12) + 1
+                period_month = f'{y:04d}-{new_m:02d}'
+            else:
+                period_month = month  # None or single month (no change)
 
-        db.session.add(debt)
+            # Auto-suffix description when multiple periods
+            if quantity > 1:
+                desc = f'{description} ({i + 1}/{quantity})'
+            else:
+                desc = description
+
+            debt = Debt(
+                player_id=player_id,
+                debt_type=debt_type,
+                amount=amount,
+                description=desc,
+                month=period_month,
+                paid=paid,
+            )
+            if paid:
+                debt.paid_at = datetime.utcnow()
+
+            db.session.add(debt)
+            created += 1
+
         db.session.commit()
-        flash('Cobrança manual adicionada!', 'success')
+
+        if quantity > 1:
+            flash(f'{created} cobranças adicionadas (total: {amount * created:.0f}m ISK)!', 'success')
+        else:
+            flash('Cobrança manual adicionada!', 'success')
+
         return redirect(url_for('players.detail', player_id=player_id))
 
     return render_template('payments/add_manual.html',

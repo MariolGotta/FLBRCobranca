@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Editar Tutorial{% endblock %}
+
+{% block extra_head %}
+<!-- SimpleMDE - editor markdown/HTML amigável -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="text-white mb-0">
+        <i class="bi bi-pencil-square text-warning"></i> Editar Tutorial do Novato
+    </h4>
+    <a href="{{ url_for('tutorial.view') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-eye"></i> Ver Tutorial
+    </a>
+</div>
+
+<div class="card bg-dark border-secondary">
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label text-secondary small">
+                    Conteúdo do tutorial (HTML). Use as tags normais:
+                    <code>&lt;b&gt;</code>, <code>&lt;ul&gt;&lt;li&gt;</code>,
+                    <code>&lt;a href=""&gt;</code>, <code>&lt;h5&gt;</code>, etc.
+                </label>
+                <textarea name="content" id="tutorialContent" class="form-control bg-dark border-secondary text-white"
+                          rows="25" style="font-family: monospace; font-size: 0.85rem;">{{ content }}</textarea>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-save"></i> Salvar Tutorial
+                </button>
+                <a href="{{ url_for('tutorial.view') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Live preview -->
+<div class="card bg-dark border-secondary mt-3">
+    <div class="card-header border-secondary">
+        <small class="text-secondary"><i class="bi bi-eye"></i> Preview em tempo real</small>
+    </div>
+    <div class="card-body tutorial-content" id="previewPane">
+    </div>
+</div>
+
+<style>
+.tutorial-content { color: #ccc; line-height: 1.75; }
+.tutorial-content h5 { color: #ffc107; margin-top: 1.5rem; }
+.tutorial-content a { color: #17a2b8; }
+.tutorial-content hr { border-color: #444; margin: 1.5rem 0; }
+.tutorial-content ol, .tutorial-content ul { padding-left: 1.5rem; }
+.tutorial-content li { margin-bottom: 0.4rem; }
+</style>
+
+<script>
+const textarea = document.getElementById('tutorialContent');
+const preview  = document.getElementById('previewPane');
+function updatePreview() { preview.innerHTML = textarea.value; }
+textarea.addEventListener('input', updatePreview);
+updatePreview();
+</script>
+{% endblock %}

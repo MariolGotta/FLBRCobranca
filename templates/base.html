@@ -47,6 +47,19 @@
                     </a>
                 </li>
                 {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and request.endpoint.startswith('doctrine') %}active{% endif %}"
+                       href="{{ url_for('doctrine.view') }}">
+                        <i class="bi bi-shield-fill"></i> Doutrina
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and request.endpoint.startswith('tutorial') %}active{% endif %}"
+                       href="{{ url_for('tutorial.view') }}">
+                        <i class="bi bi-book-fill"></i> Tutorial
+                        {% if current_user.is_novato %}<span class="badge bg-warning text-dark ms-1">Novo!</span>{% endif %}
+                    </a>
+                </li>
                 {% if current_user.is_admin %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
@@ -58,6 +71,10 @@
                         </a></li>
                         <li><a class="dropdown-item" href="{{ url_for('payments.add_manual') }}">
                             <i class="bi bi-plus-circle"></i> Adicionar Cobrança Manual
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('tutorial.edit') }}">
+                            <i class="bi bi-pencil-square"></i> Editar Tutorial
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('settings.index') }}">

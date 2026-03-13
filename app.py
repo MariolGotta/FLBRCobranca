@@ -42,6 +42,9 @@ def create_app():
     from routes.payments import payments_bp
     from routes.reports import reports_bp
     from routes.settings import settings_bp
+    from routes.tutorial import tutorial_bp
+    from routes.doctrine import doctrine_bp
+    from routes.skills import skills_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -50,10 +53,14 @@ def create_app():
     app.register_blueprint(payments_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(settings_bp)
+    app.register_blueprint(tutorial_bp)
+    app.register_blueprint(doctrine_bp)
+    app.register_blueprint(skills_bp)
 
     with app.app_context():
         db.create_all()
         _init_settings()
+        _migrate_db()
 
     return app
 
@@ -64,6 +71,17 @@ def _init_settings():
         if not Setting.query.get(key):
             db.session.add(Setting(key=key, value=value))
     db.session.commit()
+
+
+def _migrate_db():
+    """Add new columns to existing tables when they don't exist yet."""
+    from sqlalchemy import text, inspect
+    inspector = inspect(db.engine)
+    existing_cols = [c['name'] for c in inspector.get_columns('players')]
+    with db.engine.connect() as conn:
+        if 'skills_updated_at' not in existing_cols:
+            conn.execute(text('ALTER TABLE players ADD COLUMN skills_updated_at DATETIME'))
+            conn.commit()
 
 
 if __name__ == '__main__':

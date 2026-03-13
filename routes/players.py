@@ -210,6 +210,17 @@ def deactivate_player(player_id):
     return redirect(url_for('players.list_players'))
 
 
+@players_bp.route('/<int:player_id>/reset-password', methods=['POST'])
+@login_required
+def reset_password(player_id):
+    require_admin()
+    player = Player.query.get_or_404(player_id)
+    player.set_password(player.name)
+    db.session.commit()
+    flash(f'Senha de {player.name} resetada para o nome do personagem.', 'success')
+    return redirect(url_for('players.detail', player_id=player_id))
+
+
 @players_bp.route('/<int:player_id>/reactivate', methods=['POST'])
 @login_required
 def reactivate_player(player_id):

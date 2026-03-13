@@ -57,6 +57,7 @@ class Player(UserMixin, db.Model):
     password_hash = db.Column(db.String(256))
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    skills_updated_at = db.Column(db.DateTime, nullable=True)
 
     # Relationships
     clones = db.relationship('Player', backref=db.backref('parent', remote_side=[id]),
@@ -100,6 +101,14 @@ class Player(UserMixin, db.Model):
             return False
         delta = date.today() - self.join_date
         return delta.days > 90
+
+    @property
+    def needs_skills_update(self):
+        """Returns True if skills haven't been updated in the last 60 days."""
+        if not self.skills_updated_at:
+            return True
+        delta = datetime.utcnow() - self.skills_updated_at
+        return delta.days > 60
 
     @property
     def total_debt(self):
@@ -210,4 +219,73 @@ class EventAttendance(db.Model):
 
     __table_args__ = (
         db.UniqueConstraint('event_id', 'player_id', name='uq_event_player'),
+    )
+
+
+class TextContent(db.Model):
+    """Stores editable text content (tutorial, announcements, etc.)."""
+    __tablename__ = 'text_content'
+
+    key = db.Column(db.String(64), primary_key=True)
+    content = db.Column(db.Text, nullable=False, default='')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_by = db.Column(db.String(100))
+
+    @staticmethod
+    def get(key, default=''):
+        row = TextContent.query.get(key)
+        return row.content if row else default
+
+    @staticmethod
+    def set(key, content, updated_by=None):
+        row = TextContent.query.get(key)
+        if row:
+            row.content = content
+            row.updated_at = datetime.utcnow()
+            row.updated_by = updated_by
+        else:
+            row = TextContent(key=key, content=content, updated_by=updated_by)
+            db.session.add(row)
+        db.session.commit()
+
+
+SHIP_TYPES = ['Fragata', 'Destroyer', 'Cruzador', 'Battle Cruiser', 'Battleship', 'Dread', 'Carrier', 'Super']
+WEAPON_TYPES = ['Canhão', 'Canhão de Raios', 'Drone', 'Laser', 'Míssil']
+IMPLANT_NAMES = [
+    'Defesa Tática', 'Mísseis Táticos', 'Projeção de Suporte', 'Carga de Ogiva',
+    'Blindagem Remota', 'Repressão Saraivada', 'Escudo Remoto', 'Circulação Térmica',
+    'Táticas de Bombarda', 'Cristal de Fogo', 'Cristal de Pulso', 'Multifrequência',
+    'Tecnologia de Mira', 'Artilharia', 'Bobina de Energia Alta',
+]
+
+
+class PilotShip(db.Model):
+    """Ships a pilot has skills for, and which weapon they use."""
+    __tablename__ = 'pilot_ships'
+
+    id = db.Column(db.Integer, primary_key=True)
+    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+    ship_type = db.Column(db.String(50), nullable=False)
+    weapon_type = db.Column(db.String(50))
+
+    player = db.relationship('Player', backref=db.backref('pilot_ships', lazy='dynamic'))
+
+    __table_args__ = (
+        db.UniqueConstraint('player_id', 'ship_type', name='uq_pilot_ship'),
+    )
+
+
+class PilotImplant(db.Model):
+    """Implants a pilot has and their level (1–5)."""
+    __tablename__ = 'pilot_implants'
+
+    id = db.Column(db.Integer, primary_key=True)
+    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+    implant_name = db.Column(db.String(100), nullable=False)
+    level = db.Column(db.Integer, nullable=False, default=1)
+
+    player = db.relationship('Player', backref=db.backref('pilot_implants', lazy='dynamic'))
+
+    __table_args__ = (
+        db.UniqueConstraint('player_id', 'implant_name', name='uq_pilot_implant'),
     )

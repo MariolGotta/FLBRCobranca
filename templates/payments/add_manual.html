@@ -8,8 +8,10 @@
                 <h5 class="mb-0"><i class="bi bi-plus-circle text-info"></i> Adicionar Cobrança Manual</h5>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" id="manualForm">
                     <div class="row g-3">
+
+                        <!-- Jogador -->
                         <div class="col-md-6">
                             <label class="form-label text-secondary">Jogador</label>
                             <select name="player_id" class="form-select bg-dark border-secondary text-white" required>
@@ -19,35 +21,87 @@
                                 {% endfor %}
                             </select>
                         </div>
+
+                        <!-- Tipo -->
                         <div class="col-md-6">
                             <label class="form-label text-secondary">Tipo</label>
-                            <select name="debt_type" class="form-select bg-dark border-secondary text-white" required>
+                            <select name="debt_type" id="debtType" class="form-select bg-dark border-secondary text-white" required>
                                 {% for key, label in debt_types %}
                                 <option value="{{ key }}">{{ label }}</option>
                                 {% endfor %}
                             </select>
                         </div>
+
+                        <!-- Valor unitário -->
                         <div class="col-md-4">
-                            <label class="form-label text-secondary">Valor (m ISK)</label>
-                            <input type="number" name="amount" class="form-control bg-dark border-secondary text-white"
-                                   min="0" step="0.01" required>
+                            <label class="form-label text-secondary">Valor unitário (m ISK)</label>
+                            <input type="number" name="amount" id="amount"
+                                   class="form-control bg-dark border-secondary text-white"
+                                   min="0" step="0.01" required oninput="calcTotal()">
                         </div>
+
+                        <!-- Quantidade de parcelas -->
                         <div class="col-md-4">
-                            <label class="form-label text-secondary">Mês (YYYY-MM)</label>
-                            <input type="month" name="month" class="form-control bg-dark border-secondary text-white">
+                            <label class="form-label text-secondary">
+                                Quantidade
+                                <span class="text-muted small" id="qtdLabel">(semanas / vezes)</span>
+                            </label>
+                            <input type="number" name="quantity" id="quantity"
+                                   class="form-control bg-dark border-secondary text-white"
+                                   min="1" max="52" value="1" oninput="calcTotal()">
                         </div>
+
+                        <!-- Total calculado -->
                         <div class="col-md-4 d-flex align-items-end">
-                            <div class="form-check pb-2">
-                                <input class="form-check-input" type="checkbox" name="paid" id="paidCheck">
-                                <label class="form-check-label text-secondary" for="paidCheck">Já está pago</label>
+                            <div class="w-100">
+                                <label class="form-label text-secondary">Total</label>
+                                <div class="form-control bg-dark border-secondary text-warning fw-bold" id="totalDisplay">
+                                    0m ISK
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Mês inicial -->
+                        <div class="col-md-6">
+                            <label class="form-label text-secondary">
+                                Mês inicial
+                                <span class="text-muted small" id="monthHelp">(opcional)</span>
+                            </label>
+                            <input type="month" name="month" id="month"
+                                   class="form-control bg-dark border-secondary text-white"
+                                   oninput="calcTotal()">
+                            <div class="form-text text-muted" id="monthHint"></div>
+                        </div>
+
+                        <!-- Já pago -->
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check pb-2">
+                                <input class="form-check-input" type="checkbox" name="paid" id="paidCheck">
+                                <label class="form-check-label text-secondary" for="paidCheck">
+                                    Já está pago
+                                    <span class="badge bg-success ms-1">Quitado</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Descrição -->
                         <div class="col-12">
                             <label class="form-label text-secondary">Descrição</label>
-                            <input type="text" name="description" class="form-control bg-dark border-secondary text-white"
-                                   placeholder="Motivo da cobrança" required>
+                            <input type="text" name="description" id="description"
+                                   class="form-control bg-dark border-secondary text-white"
+                                   placeholder="Ex: SRP adiantado, Multa ausência..." required>
                         </div>
+
+                        <!-- Preview das parcelas -->
+                        <div class="col-12" id="previewBox" style="display:none">
+                            <div class="alert alert-secondary border-secondary mb-0">
+                                <strong><i class="bi bi-list-check"></i> Parcelas que serão criadas:</strong>
+                                <ul class="mb-0 mt-1 small" id="previewList"></ul>
+                            </div>
+                        </div>
+
                     </div>
+
                     <hr class="border-secondary">
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-info">
@@ -60,4 +114,77 @@
         </div>
     </div>
 </div>
+
+<script>
+// Labels de quantidade por tipo
+const qtdLabels = {
+    srp:           '(meses)',
+    outpost:       '(meses)',
+    mining_fine:   '(semanas / ausências)',
+    pvp_fine:      '(eventos / ausências)',
+    doctrine_fine: '(meses)',
+    custom:        '(vezes)',
+};
+
+document.getElementById('debtType').addEventListener('change', function () {
+    document.getElementById('qtdLabel').textContent = qtdLabels[this.value] || '(vezes)';
+    autoFillAmount(this.value);
+    calcTotal();
+});
+
+// Valores padrão das taxas (para auto-preencher o valor)
+const defaultAmounts = {
+    srp:           150,
+    outpost:       250,
+    mining_fine:   200,
+    pvp_fine:      100,
+    doctrine_fine: 50,
+};
+
+function autoFillAmount(type) {
+    const amountField = document.getElementById('amount');
+    if (!amountField.value && defaultAmounts[type]) {
+        amountField.value = defaultAmounts[type];
+    }
+}
+
+function calcTotal() {
+    const amount   = parseFloat(document.getElementById('amount').value) || 0;
+    const qty      = parseInt(document.getElementById('quantity').value)  || 1;
+    const month    = document.getElementById('month').value;
+    const total    = amount * qty;
+    const desc     = document.getElementById('description').value;
+
+    // Atualizar display do total
+    document.getElementById('totalDisplay').textContent =
+        qty > 1 ? `${amount}m × ${qty} = ${total}m ISK` : `${total}m ISK`;
+
+    // Mostrar preview das parcelas
+    const previewBox  = document.getElementById('previewBox');
+    const previewList = document.getElementById('previewList');
+
+    if (qty > 1) {
+        previewBox.style.display = '';
+        previewList.innerHTML = '';
+        for (let i = 0; i < qty; i++) {
+            let period = '';
+            if (month) {
+                const [y, m] = month.split('-').map(Number);
+                const totalMonths = m + i - 1;
+                const newY = y + Math.floor(totalMonths / 12);
+                const newM = (totalMonths % 12) + 1;
+                period = ` — ${String(newM).padStart(2,'0')}/${newY}`;
+            }
+            const li = document.createElement('li');
+            li.textContent = `Parcela ${i+1}/${qty}${period}: ${amount}m ISK`;
+            previewList.appendChild(li);
+        }
+    } else {
+        previewBox.style.display = 'none';
+    }
+}
+
+// Inicializar
+calcTotal();
+</script>
 {% endblock %}

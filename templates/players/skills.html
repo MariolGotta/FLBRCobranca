@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Skills — {{ player.name }}{% endblock %}
+{% block content %}
+
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-clock-history fs-5"></i>
+    <span><strong>Lembrete:</strong> Mantenha suas skills atualizadas — revise esta página <strong>a cada 2 meses</strong>.</span>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="text-white mb-1">
+            <i class="bi bi-stars text-warning"></i> Skills de {{ player.name }}
+        </h4>
+        <span class="badge bg-primary">{{ player.category }}</span>
+    </div>
+    <a href="{{ url_for('players.detail', player_id=player.id) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar ao Perfil
+    </a>
+</div>
+
+<form method="POST" id="skillsForm">
+
+    <!-- ===================== NAVES ===================== -->
+    <div class="card bg-dark border-secondary mb-4">
+        <div class="card-header border-secondary">
+            <h6 class="mb-0"><i class="bi bi-rocket-takeoff text-warning"></i> Naves com Skill</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th style="width:40px"></th>
+                            <th>Tipo de Nave</th>
+                            <th>Arma utilizada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ship in ship_types %}
+                        {% set field = 'ship_' + ship.lower().replace(' ', '_') %}
+                        {% set wfield = 'weapon_' + ship.lower().replace(' ', '_') %}
+                        {% set current = ships_data.get(ship) %}
+                        <tr>
+                            <td class="text-center">
+                                <input class="form-check-input ship-check" type="checkbox"
+                                       name="{{ field }}" id="{{ field }}"
+                                       data-weapon="{{ wfield }}"
+                                       {% if current %}checked{% endif %}
+                                       {% if not can_edit %}disabled{% endif %}>
+                            </td>
+                            <td>
+                                <label class="form-check-label text-white" for="{{ field }}">{{ ship }}</label>
+                            </td>
+                            <td>
+                                <select name="{{ wfield }}" class="form-select form-select-sm bg-dark border-secondary text-white weapon-select"
+                                        id="sel_{{ wfield }}"
+                                        style="max-width:200px"
+                                        {% if not current %}disabled{% endif %}
+                                        {% if not can_edit %}disabled{% endif %}>
+                                    <option value="">— Selecione —</option>
+                                    {% for w in weapon_types %}
+                                    <option value="{{ w }}" {% if current and current.weapon_type == w %}selected{% endif %}>{{ w }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== IMPLANTES ===================== -->
+    <div class="card bg-dark border-secondary mb-4">
+        <div class="card-header border-secondary">
+            <h6 class="mb-0"><i class="bi bi-cpu text-info"></i> Implantes</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-2">
+                {% for implant in implant_names %}
+                {% set field = 'implant_' + implant.lower().replace(' ', '_') %}
+                {% set lfield = 'level_' + implant.lower().replace(' ', '_') %}
+                {% set current = implants_data.get(implant) %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="d-flex align-items-center gap-2 p-2 rounded border border-secondary bg-dark">
+                        <input class="form-check-input implant-check" type="checkbox"
+                               name="{{ field }}" id="{{ field }}"
+                               data-level="{{ lfield }}"
+                               {% if current %}checked{% endif %}
+                               {% if not can_edit %}disabled{% endif %}>
+                        <label class="form-check-label text-white flex-grow-1 small" for="{{ field }}">
+                            {{ implant }}
+                        </label>
+                        <select name="{{ lfield }}" id="sel_{{ lfield }}"
+                                class="form-select form-select-sm bg-dark border-secondary text-warning implant-level"
+                                style="width:70px"
+                                {% if not current %}disabled{% endif %}
+                                {% if not can_edit %}disabled{% endif %}>
+                            {% for lvl in range(1, 46) %}
+                            <option value="{{ lvl }}" {% if current and current.level == lvl %}selected{% endif %}>
+                                Nv {{ lvl }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% if can_edit %}
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-warning">
+            <i class="bi bi-save"></i> Salvar Skills
+        </button>
+        <a href="{{ url_for('players.detail', player_id=player.id) }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+    {% endif %}
+
+</form>
+
+<script>
+// Enable/disable weapon select when ship checkbox toggled
+document.querySelectorAll('.ship-check').forEach(cb => {
+    cb.addEventListener('change', function () {
+        const sel = document.getElementById('sel_' + this.dataset.weapon);
+        if (sel) {
+            sel.disabled = !this.checked;
+            if (!this.checked) sel.value = '';
+        }
+    });
+});
+
+// Enable/disable implant level when implant checkbox toggled
+document.querySelectorAll('.implant-check').forEach(cb => {
+    cb.addEventListener('change', function () {
+        const sel = document.getElementById('sel_' + this.dataset.level);
+        if (sel) sel.disabled = !this.checked;
+    });
+});
+</script>
+{% endblock %}

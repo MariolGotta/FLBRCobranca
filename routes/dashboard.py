@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 from datetime import date
 from models import db, Player, Debt, Event
@@ -9,6 +9,11 @@ dashboard_bp = Blueprint('dashboard', __name__)
 @dashboard_bp.route('/')
 @login_required
 def index():
+    # Redirect to skills page if not updated in the last 60 days
+    if current_user.needs_skills_update:
+        flash('⚠️ Suas skills não foram atualizadas nos últimos 2 meses. Por favor, revise-as agora.', 'warning')
+        return redirect(url_for('skills.manage', player_id=current_user.id))
+
     if current_user.can_view_all:
         # Admin/Elite view
         total_players = Player.query.filter_by(active=True).count()
@@ -76,5 +81,4 @@ def index():
                                    total_debt=total_debt)
         else:
             # Single account — go straight to own profile
-            from flask import redirect, url_for
             return redirect(url_for('players.detail', player_id=current_user.id))

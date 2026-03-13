@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Tutorial Novato{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="text-white mb-0">
+        <i class="bi bi-book text-warning"></i> Tutorial do Novato
+    </h4>
+    {% if is_admin %}
+    <a href="{{ url_for('tutorial.edit') }}" class="btn btn-sm btn-outline-warning">
+        <i class="bi bi-pencil"></i> Editar Tutorial
+    </a>
+    {% endif %}
+</div>
+
+<div class="card bg-dark border-secondary">
+    <div class="card-body tutorial-content">
+        {{ content|safe }}
+    </div>
+    {% if row and row.updated_at %}
+    <div class="card-footer border-secondary text-end">
+        <small class="text-muted">
+            Última atualização: {{ row.updated_at.strftime('%d/%m/%Y às %H:%M') }}
+            {% if row.updated_by %} por <strong>{{ row.updated_by }}</strong>{% endif %}
+        </small>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.tutorial-content { color: #ccc; line-height: 1.75; }
+.tutorial-content h5 { color: #ffc107; margin-top: 1.5rem; }
+.tutorial-content a { color: #17a2b8; }
+.tutorial-content hr { border-color: #444; margin: 1.5rem 0; }
+.tutorial-content ol, .tutorial-content ul { padding-left: 1.5rem; }
+.tutorial-content li { margin-bottom: 0.4rem; }
+</style>
+{% endblock %}

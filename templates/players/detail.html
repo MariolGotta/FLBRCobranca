@@ -26,11 +26,21 @@
         </a>
     </div>
     {% endif %}
-    {% if is_admin %}
+    {% if is_admin or is_own_profile %}
     <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('skills.manage', player_id=player.id) }}" class="btn btn-sm btn-outline-info">
+            <i class="bi bi-stars"></i> Skills
+        </a>
+        {% if is_admin %}
         <a href="{{ url_for('players.edit_player', player_id=player.id) }}" class="btn btn-sm btn-outline-warning">
             <i class="bi bi-pencil"></i> Editar
         </a>
+        <form method="POST" action="{{ url_for('players.reset_password', player_id=player.id) }}"
+              onsubmit="return confirm('Resetar senha de {{ player.name }} para o nome do personagem?')">
+            <button class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-key"></i> Reset Senha
+            </button>
+        </form>
         {% if player.active %}
         <form method="POST" action="{{ url_for('players.deactivate_player', player_id=player.id) }}"
               onsubmit="return confirm('Remover {{ player.name }}?')">
@@ -40,6 +50,7 @@
         <form method="POST" action="{{ url_for('players.reactivate_player', player_id=player.id) }}">
             <button class="btn btn-sm btn-outline-success"><i class="bi bi-person-check"></i> Reativar</button>
         </form>
+        {% endif %}
         {% endif %}
     </div>
     {% endif %}
