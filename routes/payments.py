@@ -115,9 +115,18 @@ def add_manual():
         paid = request.form.get('paid') == 'on'
         quantity = max(1, int(request.form.get('quantity', 1)))
 
+        # Labels padrão por tipo — geram descrição automaticamente
+        TYPE_LABELS = {
+            'srp':           'SRP',
+            'outpost':       'Outpost',
+            'mining_fine':   'Multa Mineração',
+            'pvp_fine':      'Multa PVP',
+            'doctrine_fine': 'Multa Nave Doutrina',
+        }
+
         created = 0
         for i in range(quantity):
-            # Calculate the month for each period (e.g. Jan, Feb, Mar...)
+            # Calcula o mês de cada parcela
             if month and quantity > 1:
                 year, base_month = map(int, month.split('-'))
                 total_months = base_month + i
@@ -125,13 +134,17 @@ def add_manual():
                 new_m = ((total_months - 1) % 12) + 1
                 period_month = f'{y:04d}-{new_m:02d}'
             else:
-                period_month = month  # None or single month (no change)
+                period_month = month
 
-            # Auto-suffix description when multiple periods
-            if quantity > 1:
-                desc = f'{description} ({i + 1}/{quantity})'
+            # Descrição: tipos padrão usam formato fixo; 'custom' usa o que o usuário digitou
+            if debt_type in TYPE_LABELS:
+                if period_month:
+                    desc = f'{TYPE_LABELS[debt_type]} - {period_month}'
+                else:
+                    desc = TYPE_LABELS[debt_type]
             else:
-                desc = description
+                # Tipo "Outro": mantém descrição livre com sufixo de parcela
+                desc = f'{description} ({i + 1}/{quantity})' if quantity > 1 else description
 
             debt = Debt(
                 player_id=player_id,

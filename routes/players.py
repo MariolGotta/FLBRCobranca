@@ -64,7 +64,9 @@ def detail(player_id):
             abort(403)
 
     debts = Debt.query.filter_by(player_id=player_id).order_by(
-        Debt.paid.asc(), Debt.created_at.desc()
+        Debt.paid.asc(),       # não pagos primeiro
+        Debt.month.desc(),     # mês mais recente no topo
+        Debt.created_at.desc() # desempate pela data de criação
     ).all()
 
     unpaid_debts = [d for d in debts if not d.paid]

@@ -84,12 +84,15 @@
                             </div>
                         </div>
 
-                        <!-- Descrição -->
-                        <div class="col-12">
-                            <label class="form-label text-secondary">Descrição</label>
+                        <!-- Descrição (só para tipo "Outro") -->
+                        <div class="col-12" id="descRow" style="display:none">
+                            <label class="form-label text-secondary">Descrição <span class="text-danger">*</span></label>
                             <input type="text" name="description" id="description"
                                    class="form-control bg-dark border-secondary text-white"
-                                   placeholder="Ex: SRP adiantado, Multa ausência..." required>
+                                   placeholder="Ex: pagamento acordado, reembolso...">
+                            <div class="form-text text-secondary">
+                                Para tipos padrão (SRP, Outpost, etc.) a descrição é gerada automaticamente.
+                            </div>
                         </div>
 
                         <!-- Preview das parcelas -->
@@ -126,9 +129,32 @@ const qtdLabels = {
     custom:        '(vezes)',
 };
 
+// Labels de descrição automática por tipo
+const typeLabels = {
+    srp:           'SRP',
+    outpost:       'Outpost',
+    mining_fine:   'Multa Mineração',
+    pvp_fine:      'Multa PVP',
+    doctrine_fine: 'Multa Nave Doutrina',
+};
+
+function toggleDescField(type) {
+    const descRow  = document.getElementById('descRow');
+    const descInput = document.getElementById('description');
+    if (type === 'custom') {
+        descRow.style.display = '';
+        descInput.required = true;
+    } else {
+        descRow.style.display = 'none';
+        descInput.required = false;
+        descInput.value = '';
+    }
+}
+
 document.getElementById('debtType').addEventListener('change', function () {
     document.getElementById('qtdLabel').textContent = qtdLabels[this.value] || '(vezes)';
     autoFillAmount(this.value);
+    toggleDescField(this.value);
     calcTotal();
 });
 
@@ -153,6 +179,7 @@ function calcTotal() {
     const qty      = parseInt(document.getElementById('quantity').value)  || 1;
     const month    = document.getElementById('month').value;
     const total    = amount * qty;
+    const type     = document.getElementById('debtType').value;
     const desc     = document.getElementById('description').value;
 
     // Atualizar display do total
@@ -167,16 +194,23 @@ function calcTotal() {
         previewBox.style.display = '';
         previewList.innerHTML = '';
         for (let i = 0; i < qty; i++) {
-            let period = '';
+            let periodMonth = '';
             if (month) {
                 const [y, m] = month.split('-').map(Number);
                 const totalMonths = m + i - 1;
                 const newY = y + Math.floor(totalMonths / 12);
                 const newM = (totalMonths % 12) + 1;
-                period = ` — ${String(newM).padStart(2,'0')}/${newY}`;
+                periodMonth = `${newY}-${String(newM).padStart(2,'0')}`;
+            }
+            // Descrição no mesmo formato que o backend gera
+            let label;
+            if (typeLabels[type]) {
+                label = periodMonth ? `${typeLabels[type]} - ${periodMonth}` : typeLabels[type];
+            } else {
+                label = desc ? `${desc} (${i+1}/${qty})` : `Parcela ${i+1}/${qty}`;
             }
             const li = document.createElement('li');
-            li.textContent = `Parcela ${i+1}/${qty}${period}: ${amount}m ISK`;
+            li.textContent = `${label}: ${amount}m ISK`;
             previewList.appendChild(li);
         }
     } else {
@@ -185,6 +219,7 @@ function calcTotal() {
 }
 
 // Inicializar
+toggleDescField(document.getElementById('debtType').value);
 calcTotal();
 </script>
 {% endblock %}
