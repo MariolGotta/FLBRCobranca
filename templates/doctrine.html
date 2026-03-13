@@ -6,83 +6,119 @@
     <h4 class="text-white mb-1">
         <i class="bi bi-shield-fill text-warning"></i> Naves de Doutrina FLBR 2025
     </h4>
-    <p class="text-secondary small mb-0">Fits oficiais da corporação. {{ ships|length }} naves cadastradas.</p>
+    <p class="text-secondary small mb-0">Fits oficiais da corporação. Selecione o modo de doutrina abaixo.</p>
 </div>
 
-{% if not ships %}
+{% if not doctrines %}
 <div class="alert alert-warning">
     <i class="bi bi-exclamation-triangle"></i>
-    Arquivo de doutrina não encontrado ou vazio. Coloque o arquivo
-    <code>Doutrina FLBR 2025.xlsx</code> na pasta raiz do projeto.
+    Arquivo de doutrina não encontrado. Coloque <code>Doutrina FLBR 2025.xlsx</code> na pasta raiz do projeto.
 </div>
 {% else %}
 
-<!-- Quick nav -->
-<div class="d-flex flex-wrap gap-2 mb-4">
-    {% for ship in ships %}
-    <a href="#ship-{{ loop.index }}" class="btn btn-sm btn-outline-secondary">{{ ship.name }}</a>
+<!-- Doctrine selector tabs -->
+<ul class="nav nav-pills mb-4 gap-2" id="doctrineTabs" role="tablist">
+    {% for doc in doctrines %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if loop.first %}active{% endif %} d-flex align-items-center gap-2"
+                id="tab-{{ doc.id }}"
+                data-bs-toggle="pill"
+                data-bs-target="#pane-{{ doc.id }}"
+                type="button" role="tab">
+            <i class="bi {{ doc.icon }} text-{{ doc.color }}"></i>
+            <span>{{ doc.label }}</span>
+            <span class="badge bg-secondary ms-1">{{ doc.ships|length }}</span>
+        </button>
+    </li>
     {% endfor %}
-</div>
+</ul>
 
-<!-- Ship cards -->
-<div class="row g-3">
-    {% for ship in ships %}
-    <div class="col-md-6 col-xl-4" id="ship-{{ loop.index }}">
-        <div class="card bg-dark border-secondary h-100">
-            <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-                <strong class="text-warning">
-                    <i class="bi bi-rocket-takeoff-fill me-1"></i>{{ ship.name }}
-                </strong>
-                <span class="badge bg-secondary">{{ ship.slots|length }} slots</span>
-            </div>
-            <div class="card-body p-0">
-                {% if ship.slots %}
-                <table class="table table-dark table-sm mb-0">
-                    <thead class="table-secondary">
-                        <tr>
-                            <th style="width:22%">Slot</th>
-                            <th>Item</th>
-                            <th style="width:10%" class="text-center">Qtd</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for slot_group in ship.slots %}
-                            {% set slot_colors = {
-                                'HIGH': 'text-danger',
-                                'MID': 'text-info',
-                                'LOW': 'text-success',
-                                'RIG': 'text-warning',
-                                'DRONE': 'text-secondary',
-                                'CARGO': 'text-muted',
-                            } %}
-                            {% set color = 'text-light' %}
-                            {% for key, cls in slot_colors.items() %}
-                                {% if slot_group.slot.upper().startswith(key) %}
-                                    {% set color = cls %}
-                                {% endif %}
-                            {% endfor %}
-                            {% for entry in slot_group.entries %}
-                            <tr>
-                                {% if loop.first %}
-                                <td class="small fw-bold {{ color }}" rowspan="{{ slot_group.entries|length }}">
-                                    {{ slot_group.slot }}
-                                </td>
-                                {% endif %}
-                                <td class="small">{{ entry.item }}</td>
-                                <td class="small text-center text-secondary">{{ entry.qty }}x</td>
-                            </tr>
-                            {% endfor %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <div class="p-3 text-secondary small">Sem itens cadastrados.</div>
-                {% endif %}
-            </div>
+<!-- Tab panes -->
+<div class="tab-content" id="doctrineTabContent">
+    {% for doc in doctrines %}
+    <div class="tab-pane fade {% if loop.first %}show active{% endif %}"
+         id="pane-{{ doc.id }}"
+         role="tabpanel">
+
+        {% if not doc.ships %}
+        <div class="alert alert-secondary">Nenhum navio encontrado nesta doutrina.</div>
+        {% else %}
+
+        <!-- Quick nav -->
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            {% for ship in doc.ships %}
+            <a href="#{{ doc.id }}-ship-{{ loop.index }}"
+               class="btn btn-sm btn-outline-{{ doc.color }}">
+                {{ ship.name }}
+            </a>
+            {% endfor %}
         </div>
+
+        <!-- Ship cards -->
+        <div class="row g-3">
+            {% for ship in doc.ships %}
+            <div class="col-md-6 col-xl-4" id="{{ doc.id }}-ship-{{ loop.index }}">
+                <div class="card bg-dark border-secondary h-100">
+                    <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+                        <strong class="text-{{ doc.color }}">
+                            <i class="bi bi-rocket-takeoff-fill me-1"></i>{{ ship.name }}
+                        </strong>
+                        <span class="badge bg-secondary">{{ ship.slots|length }} grupos</span>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if ship.slots %}
+                        <table class="table table-dark table-sm mb-0">
+                            <thead class="table-secondary">
+                                <tr>
+                                    <th style="width:22%">Slot</th>
+                                    <th>Item</th>
+                                    <th style="width:10%" class="text-center">Qtd</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for slot_group in ship.slots %}
+                                    {% set slot_colors = {
+                                        'HIGH': 'text-danger',
+                                        'MID':  'text-info',
+                                        'LOW':  'text-success',
+                                        'RIG':  'text-warning',
+                                        'DRONE':'text-secondary',
+                                        'CARGO':'text-muted',
+                                    } %}
+                                    {% set color = 'text-light' %}
+                                    {% for key, cls in slot_colors.items() %}
+                                        {% if slot_group.slot.upper().startswith(key) %}
+                                            {% set color = cls %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% for entry in slot_group.entries %}
+                                    <tr>
+                                        {% if loop.first %}
+                                        <td class="small fw-bold {{ color }}"
+                                            rowspan="{{ slot_group.entries|length }}">
+                                            {{ slot_group.slot }}
+                                        </td>
+                                        {% endif %}
+                                        <td class="small">{{ entry.item }}</td>
+                                        <td class="small text-center text-secondary">{{ entry.qty }}x</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <div class="p-3 text-secondary small">Sem itens cadastrados.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
     </div>
     {% endfor %}
 </div>
-{% endif %}
 
+{% endif %}
 {% endblock %}

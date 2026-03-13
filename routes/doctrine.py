@@ -8,79 +8,85 @@ DOCTRINE_FILE = 'Doutrina FLBR 2025.xlsx'
 
 SLOT_ORDER = ['HIGH', 'MID', 'LOW', 'RIG', 'DRONE', 'CARGO', 'SUBSYSTEM', 'IMPLANT']
 
+DOCTRINES = [
+    {'id': 'hitwarp',  'label': 'Hit & Warp', 'sheet': 'hitwarp',  'icon': 'bi-lightning-charge-fill', 'color': 'warning'},
+    {'id': 'irondome', 'label': 'Iron Dome',  'sheet': 'irondome', 'icon': 'bi-shield-fill-check',     'color': 'info'},
+    {'id': 'blops',    'label': 'BLOPs',      'sheet': 'BLOPs',    'icon': 'bi-eye-slash-fill',        'color': 'danger'},
+]
+
 
 def _slot_sort_key(slot_name):
-    """Sort slots in a logical order."""
     for i, prefix in enumerate(SLOT_ORDER):
         if slot_name.upper().startswith(prefix):
             return (i, slot_name)
     return (99, slot_name)
 
 
-def _parse_doctrine_xlsx():
-    """
-    Parse the 'hitwarp' sheet from the doctrine xlsx.
-    Returns a list of dicts: {name, slots: [{slot, item, qty}]}
-    """
+def _parse_sheet(ws):
+    """Parse one doctrine sheet. Returns list of {name, slots}."""
+    rows = list(ws.iter_rows(min_row=1, values_only=True))
+    if not rows:
+        return []
+
+    # Row 0: ship names at columns 0, 3, 6, …
+    header_row = rows[0]
+    ships_order = []
+    ship_col_map = {}
+    for i, val in enumerate(header_row):
+        if val and i % 3 == 0:
+            name = str(val).strip()
+            if name:
+                ships_order.append(name)
+                ship_col_map[name] = i
+
+    ships = []
+    for ship_name in ships_order:
+        col = ship_col_map[ship_name]
+        slot_dict = {}
+
+        for row in rows[2:]:  # skip header rows (row 0 = names, row 1 = Slot/item/qnt)
+            slot = row[col]     if col     < len(row) else None
+            item = row[col + 1] if col + 1 < len(row) else None
+            qty  = row[col + 2] if col + 2 < len(row) else None
+
+            if not slot or not item:
+                continue
+            slot = str(slot).strip()
+            item = str(item).strip()
+            if not slot or not item or item in ('0', 'None', 'Nada'):
+                continue
+            try:
+                qty_int = int(qty) if qty is not None else 1
+            except (ValueError, TypeError):
+                qty_int = 1
+
+            slot_dict.setdefault(slot, []).append({'item': item, 'qty': qty_int})
+
+        sorted_slots = sorted(slot_dict.items(), key=lambda x: _slot_sort_key(x[0]))
+        ships.append({
+            'name': ship_name,
+            'slots': [{'slot': s, 'entries': entries} for s, entries in sorted_slots],
+        })
+
+    return ships
+
+
+def _parse_all_doctrines():
+    """Returns list of doctrine dicts with their ships, or empty list on error."""
     try:
         import openpyxl
-        base_dir = current_app.root_path
-        path = os.path.join(base_dir, DOCTRINE_FILE)
+        path = os.path.join(current_app.root_path, DOCTRINE_FILE)
         if not os.path.exists(path):
             return []
 
         wb = openpyxl.load_workbook(path, data_only=True)
-
-        # Get ship names from Filtrohitwarp
-        filter_ws = wb['Filtrohitwarp']
-        ship_names = [row[0] for row in filter_ws.iter_rows(min_row=1, values_only=True) if row[0]]
-
-        ws = wb['hitwarp']
-        rows = list(ws.iter_rows(min_row=1, values_only=True))
-
-        # Row 0: ship names at col 0, 3, 6, ...
-        header_row = rows[0]
-        ship_col_map = {}  # ship_name -> starting_col
-        for i, val in enumerate(header_row):
-            if val and str(val).strip() in ship_names:
-                ship_col_map[str(val).strip()] = i
-
-        ships = []
-        for ship_name in ship_names:
-            if ship_name not in ship_col_map:
+        result = []
+        for doc in DOCTRINES:
+            if doc['sheet'] not in wb.sheetnames:
                 continue
-            col = ship_col_map[ship_name]
-            slot_dict = {}  # slot_label -> [(item, qty)]
-
-            for row in rows[2:]:  # skip header rows
-                slot = row[col] if col < len(row) else None
-                item = row[col + 1] if col + 1 < len(row) else None
-                qty = row[col + 2] if col + 2 < len(row) else None
-
-                if not slot or not item:
-                    continue
-                slot = str(slot).strip()
-                item = str(item).strip()
-                if not slot or not item or item in ('0', 'None', 'Nada'):
-                    continue
-                try:
-                    qty_int = int(qty) if qty is not None else 1
-                except (ValueError, TypeError):
-                    qty_int = 1
-
-                if slot not in slot_dict:
-                    slot_dict[slot] = []
-                slot_dict[slot].append({'item': item, 'qty': qty_int})
-
-            # Sort slots in logical order
-            sorted_slots = sorted(slot_dict.items(), key=lambda x: _slot_sort_key(x[0]))
-
-            ships.append({
-                'name': ship_name,
-                'slots': [{'slot': s, 'entries': items} for s, items in sorted_slots],
-            })
-
-        return ships
+            ships = _parse_sheet(wb[doc['sheet']])
+            result.append({**doc, 'ships': ships})
+        return result
 
     except Exception as e:
         current_app.logger.error(f'Error parsing doctrine xlsx: {e}')
@@ -90,5 +96,5 @@ def _parse_doctrine_xlsx():
 @doctrine_bp.route('/')
 @login_required
 def view():
-    ships = _parse_doctrine_xlsx()
-    return render_template('doctrine.html', ships=ships)
+    doctrines = _parse_all_doctrines()
+    return render_template('doctrine.html', doctrines=doctrines)
