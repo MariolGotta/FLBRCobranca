@@ -4,7 +4,7 @@ from flask_login import login_required
 
 doctrine_bp = Blueprint('doctrine', __name__, url_prefix='/doctrine')
 
-DOCTRINE_FILE = 'Players_com_nave_de_doutrina_corrigido.xlsx'
+DOCTRINE_FILE = 'Doutrina FLBR 2025.xlsx'
 
 SLOT_ORDER = ['HIGH', 'MID', 'LOW', 'RIG', 'DRONE', 'CARGO', 'SUBSYSTEM', 'IMPLANT']
 
