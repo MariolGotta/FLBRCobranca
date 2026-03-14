@@ -117,7 +117,7 @@ def detail(event_id):
     event = Event.query.get_or_404(event_id)
 
     attendances = EventAttendance.query.filter_by(event_id=event_id)\
-        .join(Player).order_by(Player.attended.desc(), Player.name).all()
+        .join(Player).order_by(EventAttendance.attended.desc(), Player.name).all()
 
     # Get fines generated for this event
     fines = Debt.query.filter_by(reference_id=event_id).all()
