@@ -7,7 +7,7 @@
         <h4 class="text-white mb-1">
             <i class="bi bi-stars text-warning"></i> Roster de Skills
         </h4>
-        <span class="text-secondary small">Clique em uma nave para filtrar os pilotos. Selecione também uma arma para refinar.</span>
+        <span class="text-secondary small">Filtre por nave, arma ou implante para encontrar pilotos.</span>
     </div>
     <a href="{{ url_for('players.list_players') }}" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-people-fill"></i> Jogadores
@@ -20,9 +20,9 @@
 
         <!-- Linha de naves -->
         <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-            <span class="text-secondary small me-1" style="white-space:nowrap"><i class="bi bi-rocket-takeoff"></i> Nave:</span>
+            <span class="text-secondary small fw-semibold" style="min-width:70px"><i class="bi bi-rocket-takeoff"></i> Nave:</span>
             <button class="btn btn-sm btn-outline-warning active" onclick="setShipFilter(null)" id="btn_all">
-                Todos
+                Qualquer
             </button>
             {% for ship in ship_types %}
             {% set ship_slug = ship|lower|replace(' ', '_') %}
@@ -34,44 +34,56 @@
                 {% if ship in ships_without_weapons %}
                 <i class="bi bi-truck text-info"></i>
                 {% elif ship in ['VAS', 'Super'] %}
-                <i class="bi bi-diamond-fill text-danger"></i>
-                {% elif ship in ['Carrier', 'Dread'] %}
-                <i class="bi bi-hexagon-fill text-warning"></i>
+                <i class="bi bi-diamond-fill text-danger" style="font-size:0.6rem"></i>
+                {% elif ship in ['Carrier', 'FAX', 'Dread'] %}
+                <i class="bi bi-hexagon-fill text-warning" style="font-size:0.6rem"></i>
                 {% else %}
-                <i class="bi bi-circle-fill text-secondary" style="font-size:0.5rem"></i>
+                <i class="bi bi-circle-fill text-secondary" style="font-size:0.45rem"></i>
                 {% endif %}
                 {{ ship }}
             </button>
             {% endfor %}
         </div>
 
-        <!-- Linha de armas (aparece quando nave com arma está selecionada) -->
-        <div id="weapon-filter-row" class="d-flex flex-wrap gap-2 align-items-center mb-2" style="display:none!important">
-            <span class="text-secondary small me-1" style="white-space:nowrap"><i class="bi bi-crosshair"></i> Arma:</span>
-            <button class="btn btn-sm btn-outline-warning active" onclick="setWeaponFilter(null)" id="btn_weapon_all">
-                Qualquer
-            </button>
-            {% for w in weapon_types %}
-            {% set w_slug = w|lower|replace(' ', '_') %}
-            <button class="btn btn-sm btn-outline-secondary weapon-filter-btn"
-                    onclick="setWeaponFilter('{{ w }}')"
-                    id="btn_w_{{ w_slug }}"
-                    data-weapon="{{ w }}">
-                {{ w }}
-            </button>
-            {% endfor %}
-            <!-- Logística só aparece quando Battle Cruiser está selecionado -->
-            <button class="btn btn-sm btn-outline-warning weapon-filter-btn logistica-btn"
-                    onclick="setWeaponFilter('Logística')"
-                    id="btn_w_logistica"
-                    data-weapon="Logística"
-                    style="display:none">
-                Logística
-            </button>
+        <!-- Linha de armas (atualizada dinamicamente via JS) -->
+        <div id="weapon-filter-row" class="d-flex flex-wrap gap-2 align-items-center mb-2" style="display:none">
+            <span class="text-secondary small fw-semibold" style="min-width:70px"><i class="bi bi-crosshair"></i> Arma:</span>
+            <div id="weapon-buttons" class="d-flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- Divisor -->
+        <hr class="border-secondary my-2">
+
+        <!-- Linha de implantes -->
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+            <span class="text-secondary small fw-semibold" style="min-width:70px"><i class="bi bi-cpu"></i> Implante:</span>
+            <select id="implant-select" class="form-select form-select-sm bg-dark border-secondary text-white" style="max-width:260px"
+                    onchange="setImplantFilter(this.value)">
+                <option value="">— Qualquer —</option>
+                {% for imp in implant_names %}
+                <option value="{{ imp }}">{{ imp }}</option>
+                {% endfor %}
+            </select>
+            <!-- Nível do implante -->
+            <div id="implant-level-row" class="d-flex gap-2 align-items-center" style="display:none">
+                <span class="text-secondary small">Nível:</span>
+                <button class="btn btn-sm btn-outline-warning active" onclick="setImplantLevel(null)" id="btn_lvl_all">
+                    Qualquer
+                </button>
+                {% for lvl in implant_level_ranges %}
+                {% set lvl_slug = lvl|replace('-', '_') %}
+                <button class="btn btn-sm btn-outline-secondary implant-level-btn"
+                        onclick="setImplantLevel('{{ lvl }}')"
+                        id="btn_lvl_{{ lvl_slug }}"
+                        data-level="{{ lvl }}">
+                    {{ lvl }}
+                </button>
+                {% endfor %}
+            </div>
         </div>
 
         <!-- Contador de resultados -->
-        <div class="text-secondary small mt-1">
+        <div class="text-secondary small mt-2">
             Exibindo <span id="count-visible" class="text-warning fw-bold">{{ players|length }}</span>
             de {{ players|length }} pilotos
         </div>
@@ -87,15 +99,18 @@
                     <tr>
                         <th>Piloto</th>
                         <th>Categoria</th>
+                        <th>SP</th>
                         <th>Naves / Armas</th>
-                        <th style="width:130px">Atualizado</th>
-                        <th style="width:60px"></th>
+                        <th>Implantes</th>
+                        <th style="width:110px">Atualizado</th>
+                        <th style="width:50px"></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for player in players %}
                     {% set pships = ships_map.get(player.id, {}) %}
-                    <tr data-ships='{{ pships|tojson }}'>
+                    {% set pimplants = implants_map.get(player.id, {}) %}
+                    <tr data-ships='{{ pships|tojson }}' data-implants='{{ pimplants|tojson }}'>
                         <td>
                             <span class="fw-semibold text-white">{{ player.name }}</span>
                         </td>
@@ -113,12 +128,27 @@
                             </span>
                         </td>
                         <td>
+                            {% if player.skill_points %}
+                            {% set tl = player.tech_level %}
+                            {% set tec_color = ['','#4a4a4a','#5b7a3d','#3d6b8a','#7a5c8a','#8a7a2e','#8a4e2e','#2e6b8a','#2e8a5c','#c87c28','#e8a020'][tl] if tl else '#6c757d' %}
+                            <span class="badge px-2 py-1" style="background:{{ tec_color }}"
+                                  title="{{ '{:,.0f}'.format(player.skill_points).replace(',', '.') }} SP">
+                                ⚡ Tec {{ tl or '?' }}
+                            </span>
+                            <div class="text-secondary" style="font-size:0.7rem">
+                                {{ "{:,.0f}".format(player.skill_points).replace(",", ".") }}
+                            </div>
+                            {% else %}
+                            <span class="text-secondary small">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             {% if pships %}
                             <div class="d-flex flex-wrap gap-1">
                                 {% for ship, weapons in pships.items() %}
                                 <span class="badge
                                     {% if ship in ['VAS', 'Super'] %}bg-danger
-                                    {% elif ship in ['Carrier', 'Dread'] %}bg-warning text-dark
+                                    {% elif ship in ['Carrier', 'FAX', 'Dread'] %}bg-warning text-dark
                                     {% elif ship in ['Battle Cruiser', 'Battleship'] %}bg-info text-dark
                                     {% elif ship in ['Industrial', 'Nave de Comando Industrial', 'Nave Capital Industrial'] %}bg-success
                                     {% else %}bg-secondary
@@ -128,7 +158,21 @@
                                 {% endfor %}
                             </div>
                             {% else %}
-                            <span class="text-secondary fst-italic small">Nenhuma skill cadastrada</span>
+                            <span class="text-secondary fst-italic small">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if pimplants %}
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for imp_name, imp_level in pimplants.items() %}
+                                <span class="badge bg-dark border border-info text-info" style="font-size:0.7rem"
+                                      title="{{ imp_name }} — Nv {{ imp_level }}">
+                                    {{ imp_name }} <span class="text-warning">{{ imp_level }}</span>
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <span class="text-secondary fst-italic small">—</span>
                             {% endif %}
                         </td>
                         <td>
@@ -155,8 +199,13 @@
 </div>
 
 <script>
+// Ship weapons map (server-side data)
+const SHIP_WEAPONS = {{ ship_weapons|tojson }};
+
 let currentShip = null;
 let currentWeapon = null;
+let currentImplant = null;
+let currentImplantLevel = null;
 
 function setShipFilter(ship, slug) {
     currentShip = ship;
@@ -170,10 +219,7 @@ function setShipFilter(ship, slug) {
     const allBtn = document.getElementById('btn_all');
     if (ship) {
         const btn = document.getElementById('btn_' + slug);
-        if (btn) {
-            btn.classList.add('active', 'btn-outline-warning');
-            btn.classList.remove('btn-outline-secondary');
-        }
+        if (btn) { btn.classList.add('active', 'btn-outline-warning'); btn.classList.remove('btn-outline-secondary'); }
         allBtn.classList.remove('active', 'btn-outline-warning');
         allBtn.classList.add('btn-outline-secondary');
     } else {
@@ -181,50 +227,95 @@ function setShipFilter(ship, slug) {
         allBtn.classList.remove('btn-outline-secondary');
     }
 
-    // Show/hide weapon filter row
+    // Build weapon buttons for selected ship
     const wrow = document.getElementById('weapon-filter-row');
+    const wbtns = document.getElementById('weapon-buttons');
     const selectedBtn = slug ? document.getElementById('btn_' + slug) : null;
     const hasWeapons = selectedBtn && selectedBtn.dataset.hasWeapons === 'true';
-    wrow.style.display = (ship && hasWeapons) ? '' : 'none';
 
-    // Show/hide Logística button
-    const logBtn = document.getElementById('btn_w_logistica');
-    logBtn.style.display = (ship === 'Battle Cruiser') ? '' : 'none';
+    if (ship && hasWeapons && SHIP_WEAPONS[ship]) {
+        wbtns.innerHTML = '';
+        // "Qualquer" button
+        const anyBtn = document.createElement('button');
+        anyBtn.className = 'btn btn-sm btn-outline-warning active';
+        anyBtn.id = 'btn_weapon_all';
+        anyBtn.textContent = 'Qualquer';
+        anyBtn.onclick = () => setWeaponFilter(null);
+        wbtns.appendChild(anyBtn);
 
-    // Reset weapon selection
-    document.querySelectorAll('.weapon-filter-btn').forEach(b => {
-        b.classList.remove('active', 'btn-outline-warning');
-        b.classList.add('btn-outline-secondary');
-    });
-    const wAllBtn = document.getElementById('btn_weapon_all');
-    wAllBtn.classList.add('active', 'btn-outline-warning');
-    wAllBtn.classList.remove('btn-outline-secondary');
+        SHIP_WEAPONS[ship].forEach(w => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-sm btn-outline-secondary weapon-filter-btn';
+            btn.dataset.weapon = w;
+            btn.textContent = w;
+            btn.onclick = () => setWeaponFilter(w);
+            wbtns.appendChild(btn);
+        });
+        wrow.style.display = '';
+    } else {
+        wrow.style.display = 'none';
+        wbtns.innerHTML = '';
+    }
 
     applyFilter();
 }
 
 function setWeaponFilter(weapon) {
     currentWeapon = weapon;
-
     document.querySelectorAll('.weapon-filter-btn').forEach(b => {
         b.classList.remove('active', 'btn-outline-warning');
         b.classList.add('btn-outline-secondary');
     });
     const wAllBtn = document.getElementById('btn_weapon_all');
     if (weapon) {
-        const wSlug = weapon.toLowerCase().replace(/ /g, '_').replace(/[^a-z0-9_]/g, '');
-        const wBtn = document.getElementById('btn_w_' + wSlug);
-        if (wBtn) {
-            wBtn.classList.add('active', 'btn-outline-warning');
-            wBtn.classList.remove('btn-outline-secondary');
-        }
-        wAllBtn.classList.remove('active', 'btn-outline-warning');
-        wAllBtn.classList.add('btn-outline-secondary');
+        document.querySelectorAll('.weapon-filter-btn').forEach(b => {
+            if (b.dataset.weapon === weapon) {
+                b.classList.add('active', 'btn-outline-warning');
+                b.classList.remove('btn-outline-secondary');
+            }
+        });
+        if (wAllBtn) { wAllBtn.classList.remove('active', 'btn-outline-warning'); wAllBtn.classList.add('btn-outline-secondary'); }
     } else {
-        wAllBtn.classList.add('active', 'btn-outline-warning');
-        wAllBtn.classList.remove('btn-outline-secondary');
+        if (wAllBtn) { wAllBtn.classList.add('active', 'btn-outline-warning'); wAllBtn.classList.remove('btn-outline-secondary'); }
     }
+    applyFilter();
+}
 
+function setImplantFilter(implant) {
+    currentImplant = implant || null;
+    currentImplantLevel = null;
+
+    const lvlRow = document.getElementById('implant-level-row');
+    lvlRow.style.display = implant ? '' : 'none';
+
+    document.querySelectorAll('.implant-level-btn').forEach(b => {
+        b.classList.remove('active', 'btn-outline-warning');
+        b.classList.add('btn-outline-secondary');
+    });
+    const lvlAllBtn = document.getElementById('btn_lvl_all');
+    lvlAllBtn.classList.add('active', 'btn-outline-warning');
+    lvlAllBtn.classList.remove('btn-outline-secondary');
+
+    applyFilter();
+}
+
+function setImplantLevel(level) {
+    currentImplantLevel = level;
+    document.querySelectorAll('.implant-level-btn').forEach(b => {
+        b.classList.remove('active', 'btn-outline-warning');
+        b.classList.add('btn-outline-secondary');
+    });
+    const lvlAllBtn = document.getElementById('btn_lvl_all');
+    if (level) {
+        const lvlSlug = level.replace(/-/g, '_');
+        const btn = document.getElementById('btn_lvl_' + lvlSlug);
+        if (btn) { btn.classList.add('active', 'btn-outline-warning'); btn.classList.remove('btn-outline-secondary'); }
+        lvlAllBtn.classList.remove('active', 'btn-outline-warning');
+        lvlAllBtn.classList.add('btn-outline-secondary');
+    } else {
+        lvlAllBtn.classList.add('active', 'btn-outline-warning');
+        lvlAllBtn.classList.remove('btn-outline-secondary');
+    }
     applyFilter();
 }
 
@@ -233,25 +324,24 @@ function applyFilter() {
     let visible = 0;
 
     rows.forEach(row => {
-        if (!currentShip) {
-            row.style.display = '';
-            visible++;
-            return;
-        }
-
-        let ships = {};
+        let ships = {}, implants = {};
         try { ships = JSON.parse(row.dataset.ships); } catch(e) {}
+        try { implants = JSON.parse(row.dataset.implants); } catch(e) {}
 
-        if (!(currentShip in ships)) {
-            row.style.display = 'none';
-            return;
+        // --- Ship filter ---
+        if (currentShip) {
+            if (!(currentShip in ships)) { row.style.display = 'none'; return; }
+            if (currentWeapon) {
+                const weapons = ships[currentShip] || [];
+                if (!weapons.includes(currentWeapon)) { row.style.display = 'none'; return; }
+            }
         }
 
-        if (currentWeapon) {
-            const weapons = ships[currentShip] || [];
-            if (!weapons.includes(currentWeapon)) {
-                row.style.display = 'none';
-                return;
+        // --- Implant filter ---
+        if (currentImplant) {
+            if (!(currentImplant in implants)) { row.style.display = 'none'; return; }
+            if (currentImplantLevel && implants[currentImplant] !== currentImplantLevel) {
+                row.style.display = 'none'; return;
             }
         }
 

@@ -21,6 +21,70 @@
 
 <form method="POST" id="skillsForm">
 
+    <!-- ===================== PONTOS DE HABILIDADE ===================== -->
+    <div class="card bg-dark border-warning mb-4">
+        <div class="card-header border-warning">
+            <h6 class="mb-0"><i class="bi bi-graph-up text-warning"></i> Pontos de Habilidade (SP)</h6>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-start gap-3 gap-md-0">
+                <!-- Input SP -->
+                <div class="col-md-4">
+                    <label for="skill_points" class="form-label text-white">
+                        Total de SP <span class="text-danger">*</span>
+                        <small class="text-secondary d-block">Veja em: Menu → Personagem → Habilidades</small>
+                    </label>
+                    <div class="input-group">
+                        <input type="number" class="form-control bg-dark border-warning text-warning fw-bold"
+                               id="skill_points" name="skill_points"
+                               min="0" max="999999999"
+                               value="{{ player.skill_points or '' }}"
+                               placeholder="Ex: 15000000"
+                               {% if not can_edit %}disabled{% else %}required{% endif %}>
+                        <span class="input-group-text bg-dark border-warning text-secondary">SP</span>
+                    </div>
+                    <!-- Tec badge (atualiza em tempo real) -->
+                    <div class="mt-2" id="tec-badge-wrap">
+                        {% if player.tech_level %}
+                        <span class="badge fs-6 px-3 py-2" id="tec-badge"
+                              style="background: {{ ['','#4a4a4a','#5b7a3d','#3d6b8a','#7a5c8a','#8a7a2e','#8a4e2e','#2e6b8a','#2e8a5c','#c87c28','#e8a020'][player.tech_level] }}">
+                            ⚡ Tec {{ player.tech_level }}
+                        </span>
+                        {% else %}
+                        <span class="badge fs-6 px-3 py-2 bg-secondary" id="tec-badge">— Sem SP —</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tabela de referência de Tec -->
+                <div class="col-md-8">
+                    <div class="text-secondary small mb-1">Referência de níveis:</div>
+                    <div class="d-flex flex-wrap gap-1" id="tec-ref">
+                        {% set tec_levels = [
+                            (1,  '1',           '#4a4a4a'),
+                            (2,  '26.000',       '#5b7a3d'),
+                            (3,  '51.000',       '#3d6b8a'),
+                            (4,  '110.000',      '#7a5c8a'),
+                            (5,  '700.000',      '#8a7a2e'),
+                            (6,  '1.650.000',    '#8a4e2e'),
+                            (7,  '5.620.000',    '#2e6b8a'),
+                            (8,  '12.660.000',   '#2e8a5c'),
+                            (9,  '24.950.000',   '#c87c28'),
+                            (10, '43.380.000+',  '#e8a020'),
+                        ] %}
+                        {% for lvl, sp_min, color in tec_levels %}
+                        <span class="badge px-2 py-1 tec-ref-badge {% if player.tech_level == lvl %}ring-active{% endif %}"
+                              id="tec-ref-{{ lvl }}"
+                              style="background:{{ color }}; outline: {% if player.tech_level == lvl %}2px solid white{% else %}none{% endif %}">
+                            Tec {{ lvl }}<br><small>{{ sp_min }}</small>
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ===================== NAVES ===================== -->
     <div class="card bg-dark border-secondary mb-4">
         <div class="card-header border-secondary">
@@ -32,13 +96,14 @@
                     <thead class="table-secondary">
                         <tr>
                             <th style="width:40px"></th>
-                            <th style="width:200px">Tipo de Nave</th>
-                            <th>Armas utilizadas</th>
+                            <th style="width:210px">Tipo de Nave</th>
+                            <th>Armas / Especialização</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for ship in ship_types %}
                         {% set ship_slug = ship|lower|replace(' ', '_') %}
+                        {% set weapons_for_ship = ship_weapons.get(ship, []) %}
                         <tr>
                             <td class="text-center">
                                 <input class="form-check-input ship-check" type="checkbox"
@@ -51,39 +116,36 @@
                                 <label class="form-check-label text-white" for="ship_{{ ship_slug }}">
                                     {% if ship in ships_without_weapons %}
                                     <i class="bi bi-truck text-info me-1"></i>
+                                    {% elif ship in ['VAS', 'Super'] %}
+                                    <i class="bi bi-diamond-fill text-danger me-1" style="font-size:0.65rem"></i>
+                                    {% elif ship in ['Carrier', 'FAX', 'Dread'] %}
+                                    <i class="bi bi-hexagon-fill text-warning me-1" style="font-size:0.65rem"></i>
                                     {% endif %}
                                     {{ ship }}
                                 </label>
                             </td>
                             <td>
-                                {% if ship in ships_with_weapons %}
+                                {% if weapons_for_ship %}
                                 <div class="weapon-checkboxes" id="wdiv_{{ ship_slug }}"
                                      {% if ship not in ships_data %}style="display:none"{% endif %}>
-                                    {% for w in weapon_types %}
-                                    {% set w_slug = w|lower|replace(' ', '_') %}
+                                    {% for w in weapons_for_ship %}
+                                    {% set w_slug = w|lower|replace(' ', '_')|replace('(', '')|replace(')', '') %}
                                     <div class="form-check form-check-inline mb-1">
                                         <input class="form-check-input" type="checkbox"
                                                name="weapon_{{ ship_slug }}_{{ w_slug }}"
                                                id="w_{{ ship_slug }}_{{ w_slug }}"
                                                {% if ship in ships_data and w in ships_data[ship] %}checked{% endif %}
                                                {% if not can_edit %}disabled{% endif %}>
-                                        <label class="form-check-label text-white small"
+                                        <label class="form-check-label small
+                                            {% if 'Logística' in w %}text-warning
+                                            {% elif w in ['Caça Pesado', 'Neut', 'Scram', 'Resistence'] %}text-danger
+                                            {% elif w in ['Nestor (Armor)', 'Shield', 'Armor'] %}text-info
+                                            {% else %}text-white{% endif %}"
                                                for="w_{{ ship_slug }}_{{ w_slug }}">{{ w }}</label>
                                     </div>
                                     {% endfor %}
-                                    {% if ship == 'Battle Cruiser' %}
-                                    <div class="form-check form-check-inline mb-1">
-                                        <input class="form-check-input" type="checkbox"
-                                               name="weapon_battle_cruiser_logistica"
-                                               id="w_battle_cruiser_logistica"
-                                               {% if ship in ships_data and 'Logística' in ships_data[ship] %}checked{% endif %}
-                                               {% if not can_edit %}disabled{% endif %}>
-                                        <label class="form-check-label text-warning small"
-                                               for="w_battle_cruiser_logistica">Logística</label>
-                                    </div>
-                                    {% endif %}
                                 </div>
-                                {% else %}
+                                {% elif ship in ships_without_weapons %}
                                 <span class="text-secondary small fst-italic">Sem arma</span>
                                 {% endif %}
                             </td>
@@ -119,7 +181,7 @@
                         </label>
                         <select name="{{ lfield }}" id="sel_{{ lfield }}"
                                 class="form-select form-select-sm bg-dark border-secondary text-warning implant-level"
-                                style="width:80px"
+                                style="width:85px"
                                 {% if not current %}disabled{% endif %}
                                 {% if not can_edit %}disabled{% endif %}>
                             {% for range in implant_level_ranges %}
@@ -148,6 +210,42 @@
 </form>
 
 <script>
+// Tech level calculation (mirrors Python logic)
+const TEC_THRESHOLDS = [
+    [43380000, 10], [24950000, 9], [12660000, 8], [5620000, 7],
+    [1650000,  6],  [700000,  5],  [110000, 4],   [51000, 3],
+    [26000,    2],  [1,       1],
+];
+const TEC_COLORS = ['','#4a4a4a','#5b7a3d','#3d6b8a','#7a5c8a','#8a7a2e','#8a4e2e','#2e6b8a','#2e8a5c','#c87c28','#e8a020'];
+
+function calcTec(sp) {
+    for (const [min, lvl] of TEC_THRESHOLDS) {
+        if (sp >= min) return lvl;
+    }
+    return null;
+}
+
+function updateTecBadge() {
+    const sp = parseInt(document.getElementById('skill_points').value) || 0;
+    const lvl = calcTec(sp);
+    const badge = document.getElementById('tec-badge');
+    if (badge) {
+        badge.textContent = lvl ? '⚡ Tec ' + lvl : '— Sem SP —';
+        badge.style.background = lvl ? TEC_COLORS[lvl] : '#6c757d';
+    }
+    // Highlight active ref badge
+    document.querySelectorAll('.tec-ref-badge').forEach(b => b.style.outline = 'none');
+    if (lvl) {
+        const active = document.getElementById('tec-ref-' + lvl);
+        if (active) active.style.outline = '2px solid white';
+    }
+}
+
+const spInput = document.getElementById('skill_points');
+if (spInput && !spInput.disabled) {
+    spInput.addEventListener('input', updateTecBadge);
+}
+
 // Show/hide weapon checkboxes when ship checkbox is toggled
 document.querySelectorAll('.ship-check').forEach(cb => {
     cb.addEventListener('change', function () {
@@ -167,6 +265,17 @@ document.querySelectorAll('.implant-check').forEach(cb => {
         const sel = document.getElementById('sel_level_' + this.dataset.level);
         if (sel) sel.disabled = !this.checked;
     });
+});
+
+// Validate SP before submit
+document.getElementById('skillsForm').addEventListener('submit', function(e) {
+    const sp = document.getElementById('skill_points');
+    if (sp && !sp.disabled && (!sp.value || parseInt(sp.value) < 0)) {
+        e.preventDefault();
+        sp.focus();
+        sp.classList.add('is-invalid');
+        alert('Informe os pontos de habilidade (SP) para salvar.');
+    }
 });
 </script>
 {% endblock %}

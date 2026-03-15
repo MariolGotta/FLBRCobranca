@@ -59,6 +59,7 @@ class Player(UserMixin, db.Model):
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     skills_updated_at = db.Column(db.DateTime, nullable=True)
+    skill_points = db.Column(db.Integer, nullable=True)
 
     # Relationships
     clones = db.relationship('Player', backref=db.backref('parent', remote_side=[id]),
@@ -107,6 +108,27 @@ class Player(UserMixin, db.Model):
             return False
         delta = date.today() - self.join_date
         return delta.days > 90
+
+    @property
+    def tech_level(self):
+        """Returns tech level (1-10) based on skill points."""
+        sp = self.skill_points or 0
+        thresholds = [
+            (43_380_000, 10),
+            (24_950_000,  9),
+            (12_660_000,  8),
+            ( 5_620_000,  7),
+            ( 1_650_000,  6),
+            (   700_000,  5),
+            (   110_000,  4),
+            (    51_000,  3),
+            (    26_000,  2),
+            (         1,  1),
+        ]
+        for minimum, level in thresholds:
+            if sp >= minimum:
+                return level
+        return None
 
     @property
     def needs_skills_update(self):
@@ -255,10 +277,24 @@ class TextContent(db.Model):
         db.session.commit()
 
 
-SHIPS_WITH_WEAPONS = ['Fragata', 'Destroyer', 'Cruzador', 'Battle Cruiser', 'Battleship', 'Dread', 'Carrier', 'VAS', 'Super']
+SHIPS_WITH_WEAPONS = ['Fragata', 'Destroyer', 'Cruzador', 'Battle Cruiser', 'Battleship', 'Dread', 'Carrier', 'FAX', 'VAS', 'Super']
 SHIPS_WITHOUT_WEAPONS = ['Industrial', 'Nave de Comando Industrial', 'Nave Capital Industrial']
 SHIP_TYPES = SHIPS_WITH_WEAPONS + SHIPS_WITHOUT_WEAPONS
-WEAPON_TYPES = ['Canhão', 'Canhão de Raios', 'Drone', 'Laser', 'Míssil']
+
+SHIP_WEAPONS = {
+    'Fragata':        ['Canhão', 'Canhão de Raios', 'Drone', 'Laser', 'Míssil'],
+    'Destroyer':      ['Canhão', 'Canhão de Raios', 'Drone', 'Laser', 'Míssil'],
+    'Cruzador':       ['Canhão', 'Canhão de Raios', 'Drone', 'Laser', 'Míssil'],
+    'Battle Cruiser': ['Canhão', 'Canhão de Raios', 'Drone', 'Laser', 'Míssil', 'Logística de Shield', 'Logística de Armor'],
+    'Battleship':     ['Canhão', 'Canhão de Raios', 'Drone', 'Laser', 'Míssil', 'Nestor (Armor)'],
+    'Dread':          ['Canhão', 'Canhão de Raios', 'Drone', 'Laser', 'Míssil'],
+    'Carrier':        ['Caça Leve'],
+    'FAX':            ['Shield', 'Armor'],
+    'VAS':            ['Nave Leve de Canhão', 'Nave Leve de Canhão de Raios', 'Nave Leve de Laser', 'Nave Leve de Míssil'],
+    'Super':          ['Caça Leve', 'Caça Pesado', 'Neut', 'Scram', 'Resistence'],
+}
+# Flat union of all weapons (for backward compat / generic filters)
+WEAPON_TYPES = sorted({w for ws in SHIP_WEAPONS.values() for w in ws})
 IMPLANT_NAMES = [
     'Aprimoramento de Mineração', 'Defesa Tática', 'Mísseis Táticos', 'Projeção de Suporte',
     'Carga de Ogiva', 'Blindagem Remota', 'Repressão Saraivada', 'Escudo Remoto',
