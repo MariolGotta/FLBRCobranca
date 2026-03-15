@@ -32,37 +32,60 @@
                     <thead class="table-secondary">
                         <tr>
                             <th style="width:40px"></th>
-                            <th>Tipo de Nave</th>
-                            <th>Arma utilizada</th>
+                            <th style="width:200px">Tipo de Nave</th>
+                            <th>Armas utilizadas</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for ship in ship_types %}
-                        {% set field = 'ship_' + ship.lower().replace(' ', '_') %}
-                        {% set wfield = 'weapon_' + ship.lower().replace(' ', '_') %}
-                        {% set current = ships_data.get(ship) %}
+                        {% set ship_slug = ship|lower|replace(' ', '_') %}
                         <tr>
                             <td class="text-center">
                                 <input class="form-check-input ship-check" type="checkbox"
-                                       name="{{ field }}" id="{{ field }}"
-                                       data-weapon="{{ wfield }}"
-                                       {% if current %}checked{% endif %}
+                                       name="ship_{{ ship_slug }}" id="ship_{{ ship_slug }}"
+                                       data-ship="{{ ship_slug }}"
+                                       {% if ship in ships_data %}checked{% endif %}
                                        {% if not can_edit %}disabled{% endif %}>
                             </td>
                             <td>
-                                <label class="form-check-label text-white" for="{{ field }}">{{ ship }}</label>
+                                <label class="form-check-label text-white" for="ship_{{ ship_slug }}">
+                                    {% if ship in ships_without_weapons %}
+                                    <i class="bi bi-truck text-info me-1"></i>
+                                    {% endif %}
+                                    {{ ship }}
+                                </label>
                             </td>
                             <td>
-                                <select name="{{ wfield }}" class="form-select form-select-sm bg-dark border-secondary text-white weapon-select"
-                                        id="sel_{{ wfield }}"
-                                        style="max-width:200px"
-                                        {% if not current %}disabled{% endif %}
-                                        {% if not can_edit %}disabled{% endif %}>
-                                    <option value="">— Selecione —</option>
+                                {% if ship in ships_with_weapons %}
+                                <div class="weapon-checkboxes" id="wdiv_{{ ship_slug }}"
+                                     {% if ship not in ships_data %}style="display:none"{% endif %}>
                                     {% for w in weapon_types %}
-                                    <option value="{{ w }}" {% if current and current.weapon_type == w %}selected{% endif %}>{{ w }}</option>
+                                    {% set w_slug = w|lower|replace(' ', '_') %}
+                                    <div class="form-check form-check-inline mb-1">
+                                        <input class="form-check-input" type="checkbox"
+                                               name="weapon_{{ ship_slug }}_{{ w_slug }}"
+                                               id="w_{{ ship_slug }}_{{ w_slug }}"
+                                               {% if ship in ships_data and w in ships_data[ship] %}checked{% endif %}
+                                               {% if not can_edit %}disabled{% endif %}>
+                                        <label class="form-check-label text-white small"
+                                               for="w_{{ ship_slug }}_{{ w_slug }}">{{ w }}</label>
+                                    </div>
                                     {% endfor %}
-                                </select>
+                                    {% if ship == 'Battle Cruiser' %}
+                                    <div class="form-check form-check-inline mb-1">
+                                        <input class="form-check-input" type="checkbox"
+                                               name="weapon_battle_cruiser_logistica"
+                                               id="w_battle_cruiser_logistica"
+                                               {% if ship in ships_data and 'Logística' in ships_data[ship] %}checked{% endif %}
+                                               {% if not can_edit %}disabled{% endif %}>
+                                        <label class="form-check-label text-warning small"
+                                               for="w_battle_cruiser_logistica">Logística</label>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <span class="text-secondary small fst-italic">Sem arma</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -80,27 +103,29 @@
         <div class="card-body">
             <div class="row g-2">
                 {% for implant in implant_names %}
-                {% set field = 'implant_' + implant.lower().replace(' ', '_') %}
-                {% set lfield = 'level_' + implant.lower().replace(' ', '_') %}
+                {% set implant_slug = implant|lower|replace(' ', '_') %}
+                {% set lfield = 'level_' + implant_slug %}
                 {% set current = implants_data.get(implant) %}
                 <div class="col-md-6 col-lg-4">
                     <div class="d-flex align-items-center gap-2 p-2 rounded border border-secondary bg-dark">
                         <input class="form-check-input implant-check" type="checkbox"
-                               name="{{ field }}" id="{{ field }}"
-                               data-level="{{ lfield }}"
+                               name="implant_{{ implant_slug }}" id="implant_{{ implant_slug }}"
+                               data-level="{{ implant_slug }}"
                                {% if current %}checked{% endif %}
                                {% if not can_edit %}disabled{% endif %}>
-                        <label class="form-check-label text-white flex-grow-1 small" for="{{ field }}">
+                        <label class="form-check-label text-white flex-grow-1 small"
+                               for="implant_{{ implant_slug }}">
                             {{ implant }}
                         </label>
                         <select name="{{ lfield }}" id="sel_{{ lfield }}"
                                 class="form-select form-select-sm bg-dark border-secondary text-warning implant-level"
-                                style="width:70px"
+                                style="width:80px"
                                 {% if not current %}disabled{% endif %}
                                 {% if not can_edit %}disabled{% endif %}>
-                            {% for lvl in range(1, 46) %}
-                            <option value="{{ lvl }}" {% if current and current.level == lvl %}selected{% endif %}>
-                                Nv {{ lvl }}
+                            {% for range in implant_level_ranges %}
+                            <option value="{{ range }}"
+                                    {% if current and current.level|string == range %}selected{% endif %}>
+                                {{ range }}
                             </option>
                             {% endfor %}
                         </select>
@@ -123,21 +148,23 @@
 </form>
 
 <script>
-// Enable/disable weapon select when ship checkbox toggled
+// Show/hide weapon checkboxes when ship checkbox is toggled
 document.querySelectorAll('.ship-check').forEach(cb => {
     cb.addEventListener('change', function () {
-        const sel = document.getElementById('sel_' + this.dataset.weapon);
-        if (sel) {
-            sel.disabled = !this.checked;
-            if (!this.checked) sel.value = '';
+        const wdiv = document.getElementById('wdiv_' + this.dataset.ship);
+        if (wdiv) {
+            wdiv.style.display = this.checked ? '' : 'none';
+            if (!this.checked) {
+                wdiv.querySelectorAll('input[type="checkbox"]').forEach(w => w.checked = false);
+            }
         }
     });
 });
 
-// Enable/disable implant level when implant checkbox toggled
+// Enable/disable implant level select when implant checkbox toggled
 document.querySelectorAll('.implant-check').forEach(cb => {
     cb.addEventListener('change', function () {
-        const sel = document.getElementById('sel_' + this.dataset.level);
+        const sel = document.getElementById('sel_level_' + this.dataset.level);
         if (sel) sel.disabled = !this.checked;
     });
 });

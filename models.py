@@ -249,14 +249,18 @@ class TextContent(db.Model):
         db.session.commit()
 
 
-SHIP_TYPES = ['Fragata', 'Destroyer', 'Cruzador', 'Battle Cruiser', 'Battleship', 'Dread', 'Carrier', 'Super']
+SHIPS_WITH_WEAPONS = ['Fragata', 'Destroyer', 'Cruzador', 'Battle Cruiser', 'Battleship', 'Dread', 'Carrier', 'Super']
+SHIPS_WITHOUT_WEAPONS = ['Industrial', 'Nave de Comando Industrial', 'Nave Capital Industrial']
+SHIP_TYPES = SHIPS_WITH_WEAPONS + SHIPS_WITHOUT_WEAPONS
 WEAPON_TYPES = ['Canhão', 'Canhão de Raios', 'Drone', 'Laser', 'Míssil']
 IMPLANT_NAMES = [
-    'Defesa Tática', 'Mísseis Táticos', 'Projeção de Suporte', 'Carga de Ogiva',
-    'Blindagem Remota', 'Repressão Saraivada', 'Escudo Remoto', 'Circulação Térmica',
-    'Táticas de Bombarda', 'Cristal de Fogo', 'Cristal de Pulso', 'Multifrequência',
-    'Tecnologia de Mira', 'Artilharia', 'Bobina de Energia Alta',
+    'Aprimoramento de Mineração', 'Defesa Tática', 'Mísseis Táticos', 'Projeção de Suporte',
+    'Carga de Ogiva', 'Blindagem Remota', 'Repressão Saraivada', 'Escudo Remoto',
+    'Circulação Térmica', 'Cristal de Foco', 'Cristal de Pulso', 'Multifrequência',
+    'Tecnologia de Mira', 'Suporte a Artilharia', 'Bobina de Energia Alta',
+    'Kinect Burst', 'Defesa Automática', 'Tática Aeroespacial',
 ]
+IMPLANT_LEVEL_RANGES = ['1-15', '16-25', '26-30', '30-40', '41-44', '45']
 
 
 class PilotShip(db.Model):
@@ -282,7 +286,7 @@ class PilotImplant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     player_id = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
     implant_name = db.Column(db.String(100), nullable=False)
-    level = db.Column(db.Integer, nullable=False, default=1)
+    level = db.Column(db.String(20), nullable=False, default='1-15')
 
     player = db.relationship('Player', backref=db.backref('pilot_implants', lazy='dynamic'))
 
