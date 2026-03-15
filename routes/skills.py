@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from models import (db, Player, PilotShip, PilotImplant,
                     SHIP_TYPES, SHIPS_WITH_WEAPONS, SHIPS_WITHOUT_WEAPONS,
-                    WEAPON_TYPES, IMPLANT_NAMES, IMPLANT_LEVEL_RANGES,
+                    SHIP_WEAPONS, WEAPON_TYPES, IMPLANT_NAMES, IMPLANT_LEVEL_RANGES,
                     SUPER_VAS_ROLES)
 
 skills_bp = Blueprint('skills', __name__, url_prefix='/players')
@@ -25,20 +25,23 @@ def manage(player_id):
         if not can_edit:
             abort(403)
 
+        # --- Skill Points (obrigatório) ---
+        sp_raw = request.form.get('skill_points', '').strip()
+        if not sp_raw or not sp_raw.isdigit():
+            flash('Informe os pontos de habilidade (SP) para salvar.', 'danger')
+            return redirect(url_for('skills.manage', player_id=player_id))
+        player.skill_points = int(sp_raw)
+
         # --- Ships ---
         PilotShip.query.filter_by(player_id=player_id).delete()
         for ship_type in SHIP_TYPES:
             ship_slug = ship_type.lower().replace(' ', '_')
-            field = f'ship_{ship_slug}'
-            if request.form.get(field) == 'on':
+            if request.form.get(f'ship_{ship_slug}') == 'on':
                 weapons = []
-                if ship_type in SHIPS_WITH_WEAPONS:
-                    # Collect all checked weapon checkboxes for this ship
-                    all_weapons = WEAPON_TYPES + (['Logística'] if ship_type == 'Battle Cruiser' else [])
-                    for w in all_weapons:
-                        w_slug = w.lower().replace(' ', '_')
-                        if request.form.get(f'weapon_{ship_slug}_{w_slug}') == 'on':
-                            weapons.append(w)
+                for w in SHIP_WEAPONS.get(ship_type, []):
+                    w_slug = w.lower().replace(' ', '_').replace('(', '').replace(')', '').replace(' ', '_')
+                    if request.form.get(f'weapon_{ship_slug}_{w_slug}') == 'on':
+                        weapons.append(w)
                 weapon_str = ','.join(weapons) if weapons else None
                 ps = PilotShip(player_id=player_id, ship_type=ship_type, weapon_type=weapon_str)
                 db.session.add(ps)
@@ -47,8 +50,7 @@ def manage(player_id):
         PilotImplant.query.filter_by(player_id=player_id).delete()
         for implant in IMPLANT_NAMES:
             implant_slug = implant.lower().replace(' ', '_')
-            field = f'implant_{implant_slug}'
-            if request.form.get(field) == 'on':
+            if request.form.get(f'implant_{implant_slug}') == 'on':
                 level = request.form.get(f'level_{implant_slug}', '1-15')
                 if level not in IMPLANT_LEVEL_RANGES:
                     level = '1-15'
@@ -75,7 +77,7 @@ def manage(player_id):
                            ship_types=SHIP_TYPES,
                            ships_with_weapons=SHIPS_WITH_WEAPONS,
                            ships_without_weapons=SHIPS_WITHOUT_WEAPONS,
-                           weapon_types=WEAPON_TYPES,
+                           ship_weapons=SHIP_WEAPONS,
                            implant_names=IMPLANT_NAMES,
                            implant_level_ranges=IMPLANT_LEVEL_RANGES,
                            ships_data=ships_data,
@@ -101,14 +103,24 @@ def roster():
         weapons = ps.weapon_type.split(',') if ps.weapon_type else []
         ships_map[ps.player_id][ps.ship_type] = weapons
 
+    # Build implants_map: { player_id: { implant_name: level } }
+    implants_map = {}
+    for pi in PilotImplant.query.all():
+        if pi.player_id not in implants_map:
+            implants_map[pi.player_id] = {}
+        implants_map[pi.player_id][pi.implant_name] = pi.level
+
     # Determine which ship types to expose in filters based on role
     visible_ship_types = [s for s in SHIP_TYPES if s not in SUPER_VAS_SHIPS or can_see_super_vas]
 
     return render_template('players/skills_roster.html',
                            players=players,
                            ships_map=ships_map,
+                           implants_map=implants_map,
                            ship_types=visible_ship_types,
                            ships_with_weapons=SHIPS_WITH_WEAPONS,
                            ships_without_weapons=SHIPS_WITHOUT_WEAPONS,
-                           weapon_types=WEAPON_TYPES,
+                           ship_weapons=SHIP_WEAPONS,
+                           implant_names=IMPLANT_NAMES,
+                           implant_level_ranges=IMPLANT_LEVEL_RANGES,
                            can_see_super_vas=can_see_super_vas)
