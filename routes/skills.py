@@ -3,9 +3,12 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from models import (db, Player, PilotShip, PilotImplant,
                     SHIP_TYPES, SHIPS_WITH_WEAPONS, SHIPS_WITHOUT_WEAPONS,
-                    WEAPON_TYPES, IMPLANT_NAMES, IMPLANT_LEVEL_RANGES)
+                    WEAPON_TYPES, IMPLANT_NAMES, IMPLANT_LEVEL_RANGES,
+                    SUPER_VAS_ROLES)
 
 skills_bp = Blueprint('skills', __name__, url_prefix='/players')
+
+SUPER_VAS_SHIPS = {'VAS', 'Super'}
 
 
 @skills_bp.route('/<int:player_id>/skills', methods=['GET', 'POST'])
@@ -78,3 +81,34 @@ def manage(player_id):
                            ships_data=ships_data,
                            implants_data=implants_data,
                            can_edit=can_edit)
+
+
+@skills_bp.route('/skills/roster')
+@login_required
+def roster():
+    if not current_user.can_view_all:
+        abort(403)
+
+    can_see_super_vas = current_user.can_see_super_vas
+
+    players = Player.query.filter_by(active=True).order_by(Player.name).all()
+
+    # Build ships_map: { player_id: { ship_type: [weapons_list] } }
+    ships_map = {}
+    for ps in PilotShip.query.all():
+        if ps.player_id not in ships_map:
+            ships_map[ps.player_id] = {}
+        weapons = ps.weapon_type.split(',') if ps.weapon_type else []
+        ships_map[ps.player_id][ps.ship_type] = weapons
+
+    # Determine which ship types to expose in filters based on role
+    visible_ship_types = [s for s in SHIP_TYPES if s not in SUPER_VAS_SHIPS or can_see_super_vas]
+
+    return render_template('players/skills_roster.html',
+                           players=players,
+                           ships_map=ships_map,
+                           ship_types=visible_ship_types,
+                           ships_with_weapons=SHIPS_WITH_WEAPONS,
+                           ships_without_weapons=SHIPS_WITHOUT_WEAPONS,
+                           weapon_types=WEAPON_TYPES,
+                           can_see_super_vas=can_see_super_vas)

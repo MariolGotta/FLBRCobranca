@@ -6,7 +6,8 @@ from datetime import datetime, date
 db = SQLAlchemy()
 
 ADMIN_ROLES = {'Ministro', 'CEO', 'Contador', 'Administrador'}
-VIEW_ALL_ROLES = {'Ministro', 'CEO', 'Contador', 'Administrador', 'Elite'}
+VIEW_ALL_ROLES = {'Ministro', 'CEO', 'Contador', 'Administrador', 'Elite', 'Industrial', 'FC'}
+SUPER_VAS_ROLES = {'CEO', 'Ministro', 'Administrador', 'FC'}
 NOVATO_ROLES = {'Novato'}
 EXEMPT_FROM_EVENT_FINE = {'Novato', 'Clone'}
 
@@ -89,6 +90,11 @@ class Player(UserMixin, db.Model):
     @property
     def can_view_all(self):
         return self.category in VIEW_ALL_ROLES
+
+    @property
+    def can_see_super_vas(self):
+        """CEO, Ministro, Administrador e FC podem ver filtros de Super e VAS."""
+        return self.category in SUPER_VAS_ROLES
 
     @property
     def has_doctrine_ship(self):
@@ -249,7 +255,7 @@ class TextContent(db.Model):
         db.session.commit()
 
 
-SHIPS_WITH_WEAPONS = ['Fragata', 'Destroyer', 'Cruzador', 'Battle Cruiser', 'Battleship', 'Dread', 'Carrier', 'Super']
+SHIPS_WITH_WEAPONS = ['Fragata', 'Destroyer', 'Cruzador', 'Battle Cruiser', 'Battleship', 'Dread', 'Carrier', 'VAS', 'Super']
 SHIPS_WITHOUT_WEAPONS = ['Industrial', 'Nave de Comando Industrial', 'Nave Capital Industrial']
 SHIP_TYPES = SHIPS_WITH_WEAPONS + SHIPS_WITHOUT_WEAPONS
 WEAPON_TYPES = ['Canhão', 'Canhão de Raios', 'Drone', 'Laser', 'Míssil']

@@ -5,7 +5,7 @@ from models import db, Player, Debt, Setting
 
 players_bp = Blueprint('players', __name__, url_prefix='/players')
 
-CATEGORIES = ['Novato', 'Clone', 'Piloto', 'Elite', 'Industrial',
+CATEGORIES = ['Novato', 'Clone', 'Piloto', 'FC', 'Elite', 'Industrial',
               'Ministro', 'CEO', 'Contador', 'Administrador']
 OCCUPATIONS = ['MINERADOR', 'PVE', 'PVP', 'ROLO']
 

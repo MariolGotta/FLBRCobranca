@@ -59,12 +59,16 @@ def new_event():
         db.session.add(event)
         db.session.flush()  # get event.id
 
-        # Create attendance records for all eligible players (non-novato)
-        # For events: Clones and Novatos are exempt from fines
-        eligible = Player.query.filter(
+        # Create attendance records for eligible players
+        # Mining events: only MINERADOR players are required to attend
+        # PVP events: all non-Novato, non-Clone players
+        eligible_query = Player.query.filter(
             Player.active == True,
             Player.category.notin_(['Novato', 'Clone'])
-        ).all()
+        )
+        if event_type == 'mining':
+            eligible_query = eligible_query.filter(Player.occupation == 'MINERADOR')
+        eligible = eligible_query.all()
 
         for player in eligible:
             att = EventAttendance(event_id=event.id, player_id=player.id, attended=False)
@@ -165,6 +169,10 @@ def _apply_event_fines(event):
 
         player = Player.query.get(player_id)
         if not player or not player.active:
+            continue
+
+        # Mining events: only MINERADOR players can be fined
+        if event.event_type == 'mining' and player.occupation != 'MINERADOR':
             continue
 
         # Check if any clone attended

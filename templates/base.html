@@ -35,6 +35,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'skills.roster' %}active{% endif %}"
+                       href="{{ url_for('skills.roster') }}">
+                        <i class="bi bi-stars"></i> Skills
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if request.endpoint and request.endpoint.startswith('events') %}active{% endif %}"
                        href="{{ url_for('events.list_events') }}">
                         <i class="bi bi-calendar-event-fill"></i> Eventos
