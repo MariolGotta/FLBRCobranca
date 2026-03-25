@@ -45,6 +45,7 @@ def create_app():
     from routes.tutorial import tutorial_bp
     from routes.doctrine import doctrine_bp
     from routes.skills import skills_bp
+    from routes.api import api_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -56,6 +57,7 @@ def create_app():
     app.register_blueprint(tutorial_bp)
     app.register_blueprint(doctrine_bp)
     app.register_blueprint(skills_bp)
+    app.register_blueprint(api_bp)
 
     with app.app_context():
         db.create_all()
