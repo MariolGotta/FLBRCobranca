@@ -18,11 +18,15 @@ class Setting(db.Model):
     value = db.Column(db.Float, nullable=False)
 
     DEFAULTS = {
-        'srp_price': 150.0,
+        'srp_price':   150.0,  # Tec 10+ e sem dados de SP
+        'srp_tec9':    120.0,
+        'srp_tec8':    100.0,
+        'srp_tec7':     80.0,
+        'srp_tec6':     60.0,
         'outpost_price': 250.0,
-        'mining_fine': 200.0,
-        'pvp_fine': 100.0,
-        'doctrine_fine': 50.0,
+        'mining_fine':   200.0,
+        'pvp_fine':      100.0,
+        'doctrine_fine':  50.0,
     }
 
     @staticmethod
@@ -300,9 +304,9 @@ IMPLANT_NAMES = [
     'Carga de Ogiva', 'Blindagem Remota', 'Repressão Saraivada', 'Escudo Remoto',
     'Circulação Térmica', 'Cristal de Foco', 'Cristal de Pulso', 'Multifrequência',
     'Tecnologia de Mira', 'Suporte a Artilharia', 'Bobina de Energia Alta',
-    'Kinect Burst', 'Defesa Automática', 'Tática Aeroespacial',
+    'Kinect Burst', 'Defesa Automática', 'Tática Aeroespacial', 'Táticas de Bombarda',
 ]
-IMPLANT_LEVEL_RANGES = ['1-15', '16-25', '26-30', '30-40', '41-44', '45']
+IMPLANT_LEVEL_RANGES = ['1-14', '15-29', '30-44', '45']
 
 
 class PilotShip(db.Model):

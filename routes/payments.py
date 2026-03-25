@@ -22,7 +22,13 @@ def generate_monthly():
             flash('Selecione o mês.', 'danger')
             return redirect(url_for('payments.generate_monthly'))
 
-        srp_price = Setting.get('srp_price')
+        srp_prices = {
+            10: Setting.get('srp_price'),
+            9:  Setting.get('srp_tec9'),
+            8:  Setting.get('srp_tec8'),
+            7:  Setting.get('srp_tec7'),
+            6:  Setting.get('srp_tec6'),
+        }
         outpost_price = Setting.get('outpost_price')
         doctrine_fine = Setting.get('doctrine_fine')
 
@@ -33,16 +39,23 @@ def generate_monthly():
             if player.is_novato:
                 continue
 
-            # SRP: everyone except Novato
+            # SRP: valor baseado no tec nível do jogador
+            tec = player.tech_level
+            if tec and tec <= 5:
+                srp_amount = srp_prices[10]  # tec 1-5 paga o mesmo que tec 10
+            else:
+                srp_amount = srp_prices.get(tec, srp_prices[10])
+
             existing_srp = Debt.query.filter_by(
                 player_id=player.id, debt_type='srp', month=month
             ).first()
             if not existing_srp:
+                tec_label = f' (Tec {tec})' if tec else ''
                 debt = Debt(
                     player_id=player.id,
                     debt_type='srp',
-                    amount=srp_price,
-                    description=f'SRP - {month}',
+                    amount=srp_amount,
+                    description=f'SRP{tec_label} - {month}',
                     month=month
                 )
                 db.session.add(debt)

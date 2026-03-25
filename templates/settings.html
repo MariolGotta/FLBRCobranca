@@ -15,14 +15,41 @@
                 </div>
                 <form method="POST">
                     <div class="row g-3">
+
+                        <!-- SRP por Tec Nível -->
                         <div class="col-12">
-                            <label class="form-label text-secondary">
-                                <i class="bi bi-shield-check text-primary"></i> SRP (por mês, por jogador)
-                            </label>
-                            <div class="input-group">
-                                <input type="number" name="srp_price" class="form-control bg-dark border-secondary text-white"
-                                       value="{{ settings.srp_price }}" min="0" step="0.01" required>
-                                <span class="input-group-text bg-dark border-secondary text-secondary">m ISK</span>
+                            <div class="card bg-dark border-warning">
+                                <div class="card-header border-warning py-2">
+                                    <span class="text-warning fw-semibold">
+                                        <i class="bi bi-shield-check"></i> SRP por Tec Nível (por mês, por jogador)
+                                    </span>
+                                    <small class="text-secondary d-block mt-1">
+                                        Tec 1–5 ou sem SP cadastrado usam o valor do Tec 10.
+                                    </small>
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="row g-2">
+                                        {% for tec, key, color in [
+                                            (10, 'srp_price', '#e8a020'),
+                                            (9,  'srp_tec9',  '#c87c28'),
+                                            (8,  'srp_tec8',  '#2e8a5c'),
+                                            (7,  'srp_tec7',  '#2e6b8a'),
+                                            (6,  'srp_tec6',  '#8a4e2e'),
+                                        ] %}
+                                        <div class="col-sm-4 col-md-2">
+                                            <label class="form-label small mb-1">
+                                                <span class="badge px-2" style="background:{{ color }}">Tec {{ tec }}</span>
+                                            </label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" name="{{ key }}"
+                                                       class="form-control bg-dark border-secondary text-white"
+                                                       value="{{ settings[key] }}" min="0" step="0.01" required>
+                                                <span class="input-group-text bg-dark border-secondary text-secondary">m</span>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-12">

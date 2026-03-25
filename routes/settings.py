@@ -16,7 +16,8 @@ def index():
     require_admin()
 
     if request.method == 'POST':
-        for key in ['srp_price', 'outpost_price', 'mining_fine', 'pvp_fine', 'doctrine_fine']:
+        for key in ['srp_price', 'srp_tec9', 'srp_tec8', 'srp_tec7', 'srp_tec6',
+                    'outpost_price', 'mining_fine', 'pvp_fine', 'doctrine_fine']:
             val = request.form.get(key)
             if val is not None:
                 try:
@@ -28,10 +29,14 @@ def index():
         return redirect(url_for('settings.index'))
 
     settings = {
-        'srp_price': Setting.get('srp_price'),
+        'srp_price':     Setting.get('srp_price'),
+        'srp_tec9':      Setting.get('srp_tec9'),
+        'srp_tec8':      Setting.get('srp_tec8'),
+        'srp_tec7':      Setting.get('srp_tec7'),
+        'srp_tec6':      Setting.get('srp_tec6'),
         'outpost_price': Setting.get('outpost_price'),
-        'mining_fine': Setting.get('mining_fine'),
-        'pvp_fine': Setting.get('pvp_fine'),
+        'mining_fine':   Setting.get('mining_fine'),
+        'pvp_fine':      Setting.get('pvp_fine'),
         'doctrine_fine': Setting.get('doctrine_fine'),
     }
     return render_template('settings.html', settings=settings)
