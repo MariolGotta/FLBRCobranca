@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from datetime import date, datetime
 from models import db, Player, Debt, Setting
+from routes.discord_notify import remove_devedor_role_if_clear
 
 players_bp = Blueprint('players', __name__, url_prefix='/players')
 
@@ -200,6 +201,7 @@ def edit_player(player_id):
         player.doctrine_ship_2 = request.form.get('doctrine_ship_2', '').strip() or None
         player.doctrine_ship_3 = request.form.get('doctrine_ship_3', '').strip() or None
         player.has_outpost = request.form.get('has_outpost') == 'on'
+        player.discord_id = request.form.get('discord_id', '').strip() or None
         join_date_str = request.form.get('join_date', '')
         try:
             player.join_date = datetime.strptime(join_date_str, '%Y-%m-%d').date()
@@ -260,6 +262,9 @@ def mark_debt_paid(player_id):
         abort(400)
     debt.mark_paid()
     db.session.commit()
+    player = Player.query.get(player_id)
+    if player:
+        remove_devedor_role_if_clear(player)
     flash('Dívida marcada como paga!', 'success')
     return redirect(url_for('players.detail', player_id=player_id))
 
@@ -272,5 +277,8 @@ def mark_all_paid(player_id):
     for debt in debts:
         debt.mark_paid()
     db.session.commit()
+    player = Player.query.get(player_id)
+    if player:
+        remove_devedor_role_if_clear(player)
     flash(f'{len(debts)} dívida(s) marcadas como pagas!', 'success')
     return redirect(url_for('players.detail', player_id=player_id))

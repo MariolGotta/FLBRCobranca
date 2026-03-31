@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from datetime import date, datetime
 from models import db, Player, Event, EventAttendance, Debt
+from routes.discord_notify import notify_new_debt, add_devedor_role
 
 events_bp = Blueprint('events', __name__, url_prefix='/events')
 
@@ -213,5 +214,11 @@ def _apply_event_fines(event):
         )
         db.session.add(debt)
         count += 1
+
+        # Notifica jogador via Discord
+        player = Player.query.get(player_id)
+        if player:
+            notify_new_debt(player, debt)
+            add_devedor_role(player)
 
     return count

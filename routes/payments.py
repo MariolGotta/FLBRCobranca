@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from datetime import date
 from models import db, Player, Debt, Setting
+from routes.discord_notify import notify_new_debt, add_devedor_role
 
 payments_bp = Blueprint('payments', __name__, url_prefix='/payments')
 
@@ -94,6 +95,17 @@ def generate_monthly():
                     created += 1
 
         db.session.commit()
+
+        # Notifica jogadores via Discord (fire-and-forget)
+        for player in players:
+            if player.is_novato or not player.discord_id:
+                continue
+            open_debts = [d for d in player.debts if not d.paid and d.month == month]
+            for d in open_debts:
+                notify_new_debt(player, d)
+            if open_debts:
+                add_devedor_role(player)
+
         flash(f'{created} cobranças geradas para {month}!', 'success')
         return redirect(url_for('reports.index'))
 
@@ -174,6 +186,16 @@ def add_manual():
             created += 1
 
         db.session.commit()
+
+        # Notifica jogador via Discord se não estiver já pago
+        if not paid:
+            player = Player.query.get(player_id)
+            if player:
+                open_debts = [d for d in player.debts if not d.paid]
+                # Notifica apenas a(s) dívida(s) recém criadas
+                for d in open_debts[-created:]:
+                    notify_new_debt(player, d)
+                add_devedor_role(player)
 
         if quantity > 1:
             flash(f'{created} cobranças adicionadas (total: {amount * created:.0f}m ISK)!', 'success')

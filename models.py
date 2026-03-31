@@ -64,6 +64,7 @@ class Player(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     skills_updated_at = db.Column(db.DateTime, nullable=True)
     skill_points = db.Column(db.Integer, nullable=True)
+    discord_id   = db.Column(db.String(30), nullable=True)
 
     # Relationships
     clones = db.relationship('Player', backref=db.backref('parent', remote_side=[id]),
