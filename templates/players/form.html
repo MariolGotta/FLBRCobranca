@@ -74,6 +74,17 @@
                             </div>
                         </div>
                         <div class="col-12">
+                            <label class="form-label text-secondary">
+                                <i class="bi bi-discord text-info"></i> Discord ID
+                            </label>
+                            <input type="text" name="discord_id" class="form-control bg-dark border-secondary text-white"
+                                   value="{{ player.discord_id if player and player.discord_id else '' }}"
+                                   placeholder="Ex: 123456789012345678 (ID numérico do Discord)">
+                            <div class="form-text text-secondary">
+                                Clique com botão direito no usuário do Discord → Copiar ID. Necessário para notificações automáticas.
+                            </div>
+                        </div>
+                        <div class="col-12">
                             <label class="form-label text-secondary">Naves de Doutrina</label>
                             <div class="row g-2">
                                 <div class="col-md-4">
