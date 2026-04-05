@@ -193,10 +193,10 @@ async def periodic_reminders():
             user = await bot.fetch_user(int(p['discord_id']))
             await user.send(
                 f"👋 Olá **{p['name']}**!\n"
-                f"Sua **ocupação** ainda não foi definida no sistema da FLBR Corp.\n"
-                f"Por favor, acesse {SITE_URL + ' → ' if SITE_URL else ''}seu perfil e selecione: "
-                f"**PVP**, **PVE**, **MINERADOR** ou **ROLO**.\n"
-                f"Isso é importante para calcular suas cobranças corretamente! ⚔️"
+                f"Sua ocupação ainda não foi definida no sistema da FLBR.\n"
+                f"Envie uma mensagem para o **Lucius Maufoi** e informe se você é **Minerador** ou **PVE**.\n"
+                + (f"Acesse {SITE_URL} → seu perfil e adicione suas skills lá.\n" if SITE_URL else "")
+                + f"Isso é importante para calcular suas obrigações e acompanhar sua evolução na corporação! ⚔️"
             )
         except Exception:
             pass
