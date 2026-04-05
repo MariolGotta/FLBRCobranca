@@ -1,11 +1,28 @@
+from urllib.parse import urlparse, urljoin
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from models import db, Player
 
 auth_bp = Blueprint('auth', __name__)
 
+limiter = Limiter(key_func=get_remote_address)
+
+
+def _is_safe_url(target):
+    """Only allow redirects to the same host."""
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
+
+def init_limiter(app):
+    limiter.init_app(app)
+
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit('10 per minute')
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.index'))
@@ -18,7 +35,10 @@ def login():
         if player and player.check_password(password):
             login_user(player, remember=True)
             next_page = request.args.get('next')
-            return redirect(next_page or url_for('dashboard.index'))
+            # Validate redirect target to prevent open redirect attacks
+            if next_page and _is_safe_url(next_page):
+                return redirect(next_page)
+            return redirect(url_for('dashboard.index'))
         flash('Nome ou senha inválidos.', 'danger')
 
     return render_template('login.html')
@@ -43,8 +63,8 @@ def change_password():
             flash('Senha atual incorreta.', 'danger')
         elif new_pw != confirm_pw:
             flash('As novas senhas não coincidem.', 'danger')
-        elif len(new_pw) < 4:
-            flash('A nova senha deve ter pelo menos 4 caracteres.', 'danger')
+        elif len(new_pw) < 8:
+            flash('A nova senha deve ter pelo menos 8 caracteres.', 'danger')
         else:
             current_user.set_password(new_pw)
             db.session.commit()

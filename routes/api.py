@@ -51,7 +51,7 @@ def create_player():
         db.session.rollback()
         return jsonify({'ok': False, 'error': str(e)}), 500
 
-    return jsonify({'ok': True, 'name': name, 'password': name, 'category': category}), 201
+    return jsonify({'ok': True, 'name': name, 'category': category}), 201
 
 
 @api_bp.route('/bot/debtors', methods=['GET'])

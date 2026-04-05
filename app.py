@@ -1,6 +1,7 @@
 import os
 from flask import Flask
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 from models import db, Player, Setting
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -10,19 +11,41 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.environ.get('DATA_DIR', os.path.join(BASE_DIR, 'database'))
 DB_PATH = os.path.join(DATA_DIR, 'flbr.db')
 
+csrf = CSRFProtect()
+
 
 def create_app():
     app = Flask(__name__)
 
-    # Use env var in production; fallback for local dev
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'flbr-dev-key-mude-em-producao')
+    # ── Secret Key ──────────────────────────────────────────────────────────
+    secret_key = os.environ.get('SECRET_KEY', '')
+    if not secret_key or secret_key == 'flbr-dev-key-mude-em-producao':
+        if os.environ.get('FLASK_ENV') == 'production' or os.environ.get('PRODUCTION'):
+            raise RuntimeError(
+                'SECRET_KEY não definida! Configure a variável de ambiente SECRET_KEY '
+                'com um valor aleatório seguro antes de rodar em produção.'
+            )
+        # Dev fallback: use a stable key so sessions survive restarts
+        secret_key = 'flbr-dev-key-mude-em-producao'
+
+    app.config['SECRET_KEY'] = secret_key
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # ── Session cookie security ──────────────────────────────────────────────
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    # Enable Secure flag only when served over HTTPS (production)
+    app.config['SESSION_COOKIE_SECURE'] = bool(os.environ.get('PRODUCTION'))
+
+    # ── CSRF protection ──────────────────────────────────────────────────────
+    app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour token lifetime
 
     # Ensure database directory exists
     os.makedirs(DATA_DIR, exist_ok=True)
 
     db.init_app(app)
+    csrf.init_app(app)
 
     # Flask-Login setup
     login_manager = LoginManager(app)
@@ -34,8 +57,26 @@ def create_app():
     def load_user(user_id):
         return Player.query.get(int(user_id))
 
+    # ── Security headers ─────────────────────────────────────────────────────
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        # Basic CSP: allow self + CDNs used by the app
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "font-src 'self' https://cdn.jsdelivr.net; "
+            "img-src 'self' data:; "
+            "connect-src 'self';"
+        )
+        return response
+
     # Register blueprints
-    from routes.auth import auth_bp
+    from routes.auth import auth_bp, init_limiter
     from routes.dashboard import dashboard_bp
     from routes.players import players_bp
     from routes.events import events_bp
@@ -46,6 +87,8 @@ def create_app():
     from routes.doctrine import doctrine_bp
     from routes.skills import skills_bp
     from routes.api import api_bp
+
+    init_limiter(app)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -58,6 +101,9 @@ def create_app():
     app.register_blueprint(doctrine_bp)
     app.register_blueprint(skills_bp)
     app.register_blueprint(api_bp)
+
+    # Exempt bot API from CSRF (uses X-Bot-Token header auth instead)
+    csrf.exempt(api_bp)
 
     with app.app_context():
         db.create_all()
