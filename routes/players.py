@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from datetime import date, datetime
 from models import db, Player, Debt, Setting
-from routes.discord_notify import remove_devedor_role_if_clear
+from routes.discord_notify import remove_devedor_role_if_clear, notify_debt_paid, notify_all_paid
 
 players_bp = Blueprint('players', __name__, url_prefix='/players')
 
@@ -101,6 +101,7 @@ def detail(player_id):
     # Show "back to my accounts" button when viewing own profile and has managed accounts
     is_own_profile = (current_user.id == player_id)
     viewer_has_managed = bool(current_user.get_managed_accounts())
+    can_edit_skills = current_user.is_admin or (player_id in current_user.get_accessible_player_ids())
 
     return render_template('players/detail.html',
                            player=player,
@@ -112,6 +113,7 @@ def detail(player_id):
                            is_admin=current_user.is_admin,
                            is_own_profile=is_own_profile,
                            viewer_has_managed=viewer_has_managed,
+                           can_edit_skills=can_edit_skills,
                            paid_counts=paid_counts)
 
 
@@ -264,6 +266,7 @@ def mark_debt_paid(player_id):
     db.session.commit()
     player = Player.query.get(player_id)
     if player:
+        notify_debt_paid(player, debt)
         remove_devedor_role_if_clear(player)
     flash('Dívida marcada como paga!', 'success')
     return redirect(url_for('players.detail', player_id=player_id))
@@ -274,11 +277,13 @@ def mark_debt_paid(player_id):
 def mark_all_paid(player_id):
     require_admin()
     debts = Debt.query.filter_by(player_id=player_id, paid=False).all()
+    count = len(debts)
     for debt in debts:
         debt.mark_paid()
     db.session.commit()
     player = Player.query.get(player_id)
     if player:
+        notify_all_paid(player, count)
         remove_devedor_role_if_clear(player)
-    flash(f'{len(debts)} dívida(s) marcadas como pagas!', 'success')
+    flash(f'{count} dívida(s) marcadas como pagas!', 'success')
     return redirect(url_for('players.detail', player_id=player_id))

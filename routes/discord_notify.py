@@ -13,6 +13,15 @@ SITE_URL        = os.environ.get('SITE_URL', '')
 
 _BASE = 'https://discord.com/api/v10'
 
+TYPE_LABELS = {
+    'srp':           'SRP Mensal',
+    'outpost':       'Outpost',
+    'mining_fine':   'Multa por ausência em evento de Mineração',
+    'pvp_fine':      'Multa por ausência em evento de PVP',
+    'doctrine_fine': 'Multa por não possuir Nave de Doutrina',
+    'custom':        'Cobrança avulsa',
+}
+
 
 def _headers():
     return {'Authorization': f'Bot {BOT_TOKEN}', 'Content-Type': 'application/json'}
@@ -50,20 +59,60 @@ def notify_new_debt(player, debt):
     if not player.discord_id or not BOT_TOKEN:
         return
 
-    type_labels = {
-        'srp':           'SRP Mensal',
-        'outpost':       'Outpost',
-        'mining_fine':   'Multa Mineração',
-        'pvp_fine':      'Multa PVP',
-        'doctrine_fine': 'Multa Nave Doutrina',
-    }
-    label = type_labels.get(debt.debt_type, debt.debt_type)
+    label = TYPE_LABELS.get(debt.debt_type, debt.debt_type)
+    site_line = f"\n🌐 Acesse {SITE_URL} para ver todas as suas cobranças." if SITE_URL else ""
 
     msg = (
-        f"⚠️ **Nova dívida registrada — FLBR Corp**\n"
-        f"Tipo: **{label}** | Valor: **{debt.amount:.0f}M**\n"
-        f"Descrição: {debt.description or '—'}\n"
-        + (f"Acesse {SITE_URL} para mais detalhes." if SITE_URL else "")
+        f"⚠️ **FLBR Corp — Nova cobrança registrada**\n\n"
+        f"Personagem: **{player.name}**\n"
+        f"Tipo: **{label}**\n"
+        f"Valor: **{debt.amount:.0f}M ISK**\n"
+        f"Referência: {debt.description or '—'}\n"
+        f"{site_line}\n\n"
+        f"_Caso tenha dúvidas, entre em contato com um Ministro ou Administrador._"
+    )
+    _send_dm(player.discord_id, msg)
+
+
+def notify_debt_paid(player, debt):
+    """Envia DM ao jogador quando uma dívida é marcada como paga."""
+    if not player.discord_id or not BOT_TOKEN:
+        return
+
+    label = TYPE_LABELS.get(debt.debt_type, debt.debt_type)
+    open_count = sum(1 for d in player.debts if not d.paid)
+    site_line = f"\n🌐 Acesse {SITE_URL} para ver seu extrato." if SITE_URL else ""
+
+    if open_count == 0:
+        status_line = "✅ Você **não possui mais dívidas em aberto**. Obrigado!"
+    else:
+        status_line = f"ℹ️ Você ainda possui **{open_count}** cobrança(s) em aberto."
+
+    msg = (
+        f"✅ **FLBR Corp — Pagamento confirmado**\n\n"
+        f"Personagem: **{player.name}**\n"
+        f"Tipo: **{label}**\n"
+        f"Valor: **{debt.amount:.0f}M ISK**\n"
+        f"Referência: {debt.description or '—'}\n\n"
+        f"{status_line}"
+        f"{site_line}"
+    )
+    _send_dm(player.discord_id, msg)
+
+
+def notify_all_paid(player, count):
+    """Envia DM ao jogador quando todas as dívidas são quitadas de uma vez."""
+    if not player.discord_id or not BOT_TOKEN:
+        return
+
+    site_line = f"\n🌐 Acesse {SITE_URL} para ver seu extrato." if SITE_URL else ""
+
+    msg = (
+        f"✅ **FLBR Corp — Todas as dívidas quitadas!**\n\n"
+        f"Personagem: **{player.name}**\n"
+        f"**{count}** cobrança(s) foram marcadas como pagas.\n\n"
+        f"✅ Você **não possui mais dívidas em aberto**. Obrigado!"
+        f"{site_line}"
     )
     _send_dm(player.discord_id, msg)
 

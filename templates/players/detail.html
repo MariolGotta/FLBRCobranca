@@ -26,11 +26,13 @@
         </a>
     </div>
     {% endif %}
-    {% if is_admin or is_own_profile %}
+    {% if is_admin or is_own_profile or can_edit_skills %}
     <div class="d-flex gap-2 flex-wrap">
+        {% if can_edit_skills %}
         <a href="{{ url_for('skills.manage', player_id=player.id) }}" class="btn btn-sm btn-outline-info">
             <i class="bi bi-stars"></i> Skills
         </a>
+        {% endif %}
         {% if is_admin %}
         <a href="{{ url_for('players.edit_player', player_id=player.id) }}" class="btn btn-sm btn-outline-warning">
             <i class="bi bi-pencil"></i> Editar
